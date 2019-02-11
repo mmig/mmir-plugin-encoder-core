@@ -23,12 +23,8 @@
       "version": ">=5.0"
     }
   ],
-  "dependencies": {
-	  "mmir-install-cordova-assets": "../mmir-install-cordova-assets"
-  },
-  "scripts": {
-	  "postinstall": "mmir-install-cordova-assets",
-	  "preuninstall": "mmir-uninstall-cordova-assets"
+  "peerDependencies": {
+	  "mmir": "https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
   },
   "author": "russa, DFKI",
   "license": "MIT",
