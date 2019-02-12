@@ -20,11 +20,5 @@
   "cordova": {
     "id": "mmir-plugin-encoder-core",
     "platforms": []
-  },
-  "engines": [
-    {
-      "name": "cordova",
-      "version": ">=5.0"
-    }
-  ]
+  }
 }
