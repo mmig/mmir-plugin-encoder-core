@@ -23,13 +23,18 @@
         (NOTE: requires some additional files/modules that are included in the MMIR framework)
      -->
     <asset
-        src="www/encoder.js"
-        target="mmirf/workers/encoder.js" />
+        src="www/workers/encoderWorker.js"
+        target="mmirf/workers/encoderWorker.js" />
 
     <!-- basic silence/end-of-speech detection: -->
     <asset
-        src="www/silenceDetector.js"
+        src="www/workers/silenceDetector.js"
         target="mmirf/workers/silenceDetector.js" />
+
+    <!-- basic WebWorker recorder (for recording PCM/WAV): -->
+    <asset
+        src="www/workers/recorderWorkerExt.js"
+        target="mmirf/workers/recorderWorkerExt.js" />
 
     <!-- wrapper module for integrating encoder into the MMIR framework: -->
     <asset
@@ -40,10 +45,5 @@
     <asset
         src="www/recorderExt.js"
         target="mmirf/env/media/recorderExt.js" />
-
-    <!-- basic WebWorker recorder (for recording PCM/WAV): -->
-    <asset
-        src="www/recorderWorkerExt.js"
-        target="mmirf/workers/recorderWorkerExt.js" />
 
 </plugin>
