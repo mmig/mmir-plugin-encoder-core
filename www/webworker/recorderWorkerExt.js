@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  License (MIT)
  *
  * modifications:

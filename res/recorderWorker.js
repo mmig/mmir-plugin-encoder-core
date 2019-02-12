@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  License (MIT)
  *
  * 	Copyright (C) 2013 Matt Diamond
