@@ -2,42 +2,47 @@
  *  License (MIT)
  *
  * modifications:
- * 
+ *
  * 	Copyright (C) 2015-2016 DFKI GmbH
  * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
  * 	German Research Center for Artificial Intelligence
  * 	http://www.dfki.de
- *  
+ *
  * based on
  * 	Copyright (C) 2013 Matt Diamond (MIT License)
- * 
- * 	Permission is hereby granted, free of charge, to any person obtaining a 
- * 	copy of this software and associated documentation files (the 
- * 	"Software"), to deal in the Software without restriction, including 
- * 	without limitation the rights to use, copy, modify, merge, publish, 
- * 	distribute, sublicense, and/or sell copies of the Software, and to 
- * 	permit persons to whom the Software is furnished to do so, subject to 
+ *
+ * 	Permission is hereby granted, free of charge, to any person obtaining a
+ * 	copy of this software and associated documentation files (the
+ * 	"Software"), to deal in the Software without restriction, including
+ * 	without limitation the rights to use, copy, modify, merge, publish,
+ * 	distribute, sublicense, and/or sell copies of the Software, and to
+ * 	permit persons to whom the Software is furnished to do so, subject to
  * 	the following conditions:
- * 
- * 	The above copyright notice and this permission notice shall be included 
+ *
+ * 	The above copyright notice and this permission notice shall be included
  * 	in all copies or substantial portions of the Software.
- * 
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
- * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
- * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ *
+ * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /**
  * @module workers/recorderExt
- * 
- * TODO refactor to use (duplicate) functionality in encoder.js (and remove it here!) 
+ *
+ * TODO refactor to use (duplicate) functionality in encoder.js (and remove it here!)
  */
 
-importScripts('silenceDetector.js');
+
+if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
+  require('./silenceDetector.js');
+}  else {
+  importScripts('silenceDetector.js');
+}
 
 var recLength = 0,
   recBuffersL = [],
@@ -57,13 +62,13 @@ this.onmessage = function(e){
       break;
     //MODIFICATIONs russa:
 	case 'record':
-		
+
 		//buffer audio data
 		record(e.data.buffer);
-		
+
 		//detect noise (= speech) and silence in audio:
 		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
-		
+
 		break;
 	case 'getBuffers':
 		getBuffers(e.data? e.data.id : void(0));//MOD use id-property as argument, if present
@@ -112,23 +117,23 @@ function exportMonoWAV(type){
 
 /**
  * trigger message that sends the currently buffered (raw) audio
- * 
+ *
  * @param [id] OPTIONAL
- * 		the transaction ID (if provided, the ID will be included in the sent message) 
+ * 		the transaction ID (if provided, the ID will be included in the sent message)
  */
 function getBuffers(id) {
-	
+
   var buffers = [];
   buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
   buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
-  
+
   if(typeof id !== 'undefined'){
     self.postMessage({buffers: buffers, id: id, size: recLength});
   } else {
     buffers.size = recLength;
     this.postMessage(buffers);
   }
-  
+
 }
 
 function clear(){
@@ -176,10 +181,10 @@ function writeString(view, offset, string){
 }
 
 function encodeWAV(samples, mono){
-	
+
   var buffer = new ArrayBuffer(44 + samples.length * 2);
   var view = new DataView(buffer);
-  
+
   var channels = mono? 1 : 2;
   var bitsPerSample = 16;
   var bytesPerSample = bitsPerSample / 8;
