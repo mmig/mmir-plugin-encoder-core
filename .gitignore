@@ -33,3 +33,5 @@ proguard/
 # Android Studio captures folder
 captures/
 /temp
+
+node_modules/
