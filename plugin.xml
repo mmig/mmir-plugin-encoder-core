@@ -19,22 +19,22 @@
         <engine name="cordova" version=">=5.0" />
     </engines>
 
-    <!-- WebWorker encoder core files
+    <!-- basic WebWorker recorder (for recording PCM/WAV): -->
+    <asset
+        src="www/webworker/recorderWorkerExt.js"
+        target="mmirf/workers/recorderWorkerExt.js" />
+
+    <!-- base encoder core file (for use in WebWorker)
         (NOTE: requires some additional files/modules that are included in the MMIR framework)
      -->
     <asset
-        src="www/workers/encoderWorker.js"
-        target="mmirf/workers/encoderWorker.js" />
+        src="www/encoder.js"
+        target="mmirf/workers/encoder.js" />
 
-    <!-- basic silence/end-of-speech detection: -->
+    <!-- basic silence/end-of-speech detection (for use in WebWorker): -->
     <asset
-        src="www/workers/silenceDetector.js"
+        src="www/silenceDetector.js"
         target="mmirf/workers/silenceDetector.js" />
-
-    <!-- basic WebWorker recorder (for recording PCM/WAV): -->
-    <asset
-        src="www/workers/recorderWorkerExt.js"
-        target="mmirf/workers/recorderWorkerExt.js" />
 
     <!-- wrapper module for integrating encoder into the MMIR framework: -->
     <asset

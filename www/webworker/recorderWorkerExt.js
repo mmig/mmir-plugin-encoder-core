@@ -39,7 +39,7 @@
 
 
 if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
-  require('./silenceDetector.js');
+  require('../silenceDetector.js');
 }  else {
   importScripts('silenceDetector.js');
 }
