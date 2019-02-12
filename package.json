@@ -1,33 +1,30 @@
 {
   "name": "mmir-plugin-encoder-core",
-  "version": "0.8.00",
+  "version": "1.0.0",
   "description": "Cordova plugin for the MMIR framework that provides core functionality for running (JavaScript) audio encoders via WebWorkers.",
+  "main": "./www/webAudioInput.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab-cos.b.dfki.de/mmir/mmir-plugin-encoder-core.git"
+  },
+  "keywords": [
+    "audio",
+    "codec",
+    "webworker"
+  ],
+  "author": "russa",
+  "license": "MIT",
   "cordova": {
     "id": "mmir-plugin-encoder-core",
     "platforms": []
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mmig/mmir-plugins-media.git#master:mmir-plugin-encoder-core"
-  },
-  "keywords": [
-    "cordova",
-    "audio",
-    "codec",
-    "webworker",
-    "ecosystem:cordova"
-  ],
-  "engines": {
-    "cordova": ">=5.0",
-    "npm": ">=2.0"
-  },
-  "peerDependencies": {
-	  "mmir": "https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
-  },
-  "author": "russa, DFKI",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mmig/mmir-plugins-media/issues"
-  },
-  "homepage": "https://github.com/mmig/mmir-plugins-media/tree/master%3Ammir-plugin-encoder-core#readme"
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=5.0"
+    }
+  ]
 }
