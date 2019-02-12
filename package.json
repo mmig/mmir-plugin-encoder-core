@@ -24,5 +24,8 @@
   "cordova": {
     "id": "mmir-plugin-encoder-core",
     "platforms": []
+  },
+  "peerDependencies": {
+    "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
   }
 }
