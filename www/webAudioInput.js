@@ -1,4 +1,4 @@
-﻿﻿/*
+/*
  * 	Copyright (C) 2012-2016 DFKI GmbH
  * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
  * 	German Research Center for Artificial Intelligence
@@ -47,11 +47,19 @@ return {
 		 *
 		 * @memberOf Html5AudioInput#
 		 */
-		var _workerImpl = {
-			'amr':  'amrEncoder.js',
-			'flac': 'flacEncoder.js',
-			'wav':  'recorderWorkerExt.js'
-		};
+		if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
+			var _workerImpl = {
+				'amr':  'mmir-plugin-encoder-amr',
+				'flac': 'mmir-plugin-encoder-flac',
+				'wav':  'mmir-plugin-encoder-core/workers/recorderWorkerExt'
+			};
+		} else {
+			var _workerImpl = {
+				'amr':  'amrEncoder.js',
+				'flac': 'flacEncoder.js',
+				'wav':  'recorderWorkerExt.js'
+			};
+		}
 
 		/**
 		 * Map for the worker-filenames of the various audio-input implementations:
@@ -67,6 +75,10 @@ return {
 			'webasrgooglev1impl.js': _workerImpl.wav,
 			'webasrgoogleimpl.js':   _workerImpl.flac,
 			'webasrnuanceimpl.js':   _workerImpl.wav,
+
+			'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.wav,
+			'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
+
 			'_default':              _workerImpl.wav
 		};
 
@@ -505,7 +517,7 @@ return {
     					}
     				}
 
-    				var recorderWorkerPath = consts.getWorkerPath()+workerImpl;
+    				var recorderWorkerPath = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? workerImpl : consts.getWorkerPath()+workerImpl;
     				recorder = new Recorder(input, {workerPath: recorderWorkerPath});
     			} else {
     				recorder.init(input);
@@ -1043,8 +1055,8 @@ return {
 
 		if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
 			try{
-				require('mmirf/webMicLevels');//FIXME module ID?
-				processLoaded(require(implFile), './recorderExt.js');
+				mediaManager.loadFile('webMicLevels.js');
+				processLoaded(__webpack_require__(implFile.replace(/\.js$/i, '')), require('./recorderExt.js'));
 			} catch(err){
 				handleError(err);
 			}

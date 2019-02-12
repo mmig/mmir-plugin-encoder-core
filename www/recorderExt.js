@@ -34,14 +34,14 @@
 
 define(function(){
 
-  var WORKER_PATH = 'mmirf/workers/recorderWorker.js';
+  var WORKER_PATH = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-plugin-encoder-core/workers/recorderWorkerExt' : 'mmirf/workers/recorderWorkerExt.js';
 
   var Recorder = function(source, cfg){
     var config = cfg || {};
     var bufferLen = config.bufferLen || 4096;
 //    this.context = source.context;
 //    this.node = this.createScriptProcessor(this.context, bufferLen, 2, 2);
-    var worker = new Worker(config.workerPath || WORKER_PATH);
+    var worker = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? __webpack_require__(config.workerPath || WORKER_PATH)() : new Worker(config.workerPath || WORKER_PATH);
 //    worker.postMessage({
 //    	cmd: 'init',
 //    	config: {
