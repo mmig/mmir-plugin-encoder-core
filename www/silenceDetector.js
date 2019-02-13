@@ -6,42 +6,42 @@
  * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
  * 	German Research Center for Artificial Intelligence
  * 	http://www.dfki.de
- * 
- * 	Permission is hereby granted, free of charge, to any person obtaining a 
- * 	copy of this software and associated documentation files (the 
- * 	"Software"), to deal in the Software without restriction, including 
- * 	without limitation the rights to use, copy, modify, merge, publish, 
- * 	distribute, sublicense, and/or sell copies of the Software, and to 
- * 	permit persons to whom the Software is furnished to do so, subject to 
+ *
+ * 	Permission is hereby granted, free of charge, to any person obtaining a
+ * 	copy of this software and associated documentation files (the
+ * 	"Software"), to deal in the Software without restriction, including
+ * 	without limitation the rights to use, copy, modify, merge, publish,
+ * 	distribute, sublicense, and/or sell copies of the Software, and to
+ * 	permit persons to whom the Software is furnished to do so, subject to
  * 	the following conditions:
- * 
- * 	The above copyright notice and this permission notice shall be included 
+ *
+ * 	The above copyright notice and this permission notice shall be included
  * 	in all copies or substantial portions of the Software.
- * 
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
- * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
- * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ *
+ * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 var SilenceDetector = (function(threadRef){
-	
-/** 
+
+/**
  * Counter:
  * 	how many silent blobs have there currently been in a row now?
  * @memberOf SilenceDetector.prototype
  */
 var silenceCount = 0;
 /**
- * Counter: 
+ * Counter:
  * 	how many blobs have been currently loud in a row now?
  * @memberOf SilenceDetector.prototype
  */
 var speechCount = 0;
-/** 
+/**
  * Counter:
  * 	how long has there been no loud enough input (in a row), up to now?
  * @memberOf SilenceDetector.prototype
@@ -49,7 +49,7 @@ var speechCount = 0;
 var lastInput = 0;
 /** @memberOf SilenceDetector.prototype */
 var recording= false;
-/** 
+/**
  * the lower threshold for noise (lower than this is considered "silence"), i.e.
  * the bigger, the more is counted as silent
  * @memberOf SilenceDetector.prototype
@@ -69,67 +69,67 @@ var blobSizeCount = 0;
 var blobNumber = 0;
 
 //events:
-/** 
+/**
  * Fired, when detection has started
- * 
+ *
  * @see .start
- * 
+ *
  * @event SilenceDetectionStarted
  * @memberOf SilenceDetector.prototype
  */
 var STARTED = 'Silence Detection started';
-/** 
+/**
  * Fired, when detection has stopped
- * 
+ *
  * @see .stop
- * 
+ *
  * @event SilenceDetectionStopped
  * @memberOf SilenceDetector.prototype
  */
 var STOPPED = 'Silence Detection stopped';
-/** 
+/**
  * Fired, when detector has been initialized / configured.
- * 
+ *
  * @see .initDetection
- * 
+ *
  * @event SilenceDetectionInitialized
  * @memberOf SilenceDetector.prototype
  */
 var INITIALIZED = 'Silence Detection initialized';
-/** 
+/**
  * Fired, when {@link #maxBlobSize} for buffering audio has been reached,
  * with regard to last fired {@link #event:SilenceDetectionSendPartial},
  * {@link #event:SilenceDetectionPauseDetected}, or {@link #event:SilenceDetectionClear}
  * event.
- * 
+ *
  * @event SilenceDetectionSendPartial
  * @memberOf SilenceDetector.prototype
  * @default
  */
 var SEND_PARTIAL = 'Send partial!';
-/** 
+/**
  * Fired, after {@link .start} and the first N audio blobs have been processed.
- * 
+ *
  * @event SilenceDetectionAudioStarted
  * @memberOf SilenceDetector.prototype
  */
 var AUDIO_STARTED = 'Silence Detection Audio started';
-/** 
+/**
  * Fired, if a <em>pause</em> (i.e. silence) was detected after some <em>noise</em>
- * 
+ *
  * @see .isSilent
- * 
+ *
  * @event SilenceDetectionPauseDetected
  * @memberOf SilenceDetector.prototype
  */
 var SILENCE = 'Silence detected!';
-/** 
+/**
  * Fired, if audio was silent for some duration of time.
- * 
- * The data since last 'send partial'/'silence detected' only consists of silence, i.e. it can be cleared/deleted. 
- * 
+ *
+ * The data since last 'send partial'/'silence detected' only consists of silence, i.e. it can be cleared/deleted.
+ *
  * @see .isSilent
- * 
+ *
  * @event SilenceDetectionClear
  * @memberOf SilenceDetector.prototype
  */
@@ -137,7 +137,7 @@ var CLEAR = 'clear';
 
 /**
  * sets the config and echos back
- * 
+ *
  * @param {PlainObject} config
  * 			configuration settings with properties
  * @param {Integer} config.sampleRate
@@ -146,11 +146,11 @@ var CLEAR = 'clear';
 						lower threshold up to which audio is considered as noise (i.e. "not silent")
  * @param {Integer} config.pauseCount
 						"silence duration": count of "silent" data blobs in a row which must occur, in order to
-						consider the input as "speech input pause" 
+						consider the input as "speech input pause"
  * @param {Integer} config.resetCount
 						"pure silence": if there was no "noise" since the last "silence" and the amount of "silence" has passed,
 						signal "clear" (i.e. clear/delete this silent audio); for saving bandwidth
- * 			
+ *
  * @private
  * @memberOf SilenceDetector.prototype
  */
@@ -184,22 +184,22 @@ function _initDetection(config){
 
 /**
  * processes an audioBlob and decides whether or not there has been a "real input"
- * (min. {@link #speechCount} "loud" blobs in a row) and a "real pause" 
+ * (min. {@link #speechCount} "loud" blobs in a row) and a "real pause"
  * (min. {@link #pauseCount} silent blobs in a row).
- * 
+ *
  * If there has been a "real pause" after "real input", {@link #event:SilenceDetectionPauseDetected} will be signaled.
- * 
+ *
  * If some time has gone by without any real input, it sends {@link #event:SilenceDetectionClear} signal,
  * i.e. signaling that that buffered audio is all silent and can be dropped / ignored.
- * 
- * 
+ *
+ *
  * Overview for detection-states & fired events, after detection was {@link .start}ed:
  * <pre>
- * 
+ *
  *        fire: CLEAR                    fire: SILENCE
  *              ^                              ^
  *              |                              |
- * [no "loud" and "silent" > resetCount]       |                         
+ * [no "loud" and "silent" > resetCount]       |
  *              |                              |
  *        |------------|                       |              |------------|
  *        |            |  <-["silent" blobs > silenceCount]-  |            |
@@ -209,16 +209,16 @@ function _initDetection(config){
  *             |                                                     |
  *  [blob count > maxBlobSize]                          [blob count > maxBlobSize]
  *             |                                                     |
- *             v                                                     v  
+ *             v                                                     v
  *    fire: SEND_PARTIAL                                    fire: SEND_PARTIAL
- *    
+ *
  * </pre>
  * (in addition, {@link #event:SilenceDetectionStarted} is fired, after {@link .start}ed and processing the first N blobs)
- * 
- * 
+ *
+ *
  * @param {Blob} inputBuffer
  * 			the audio Blob
- * 
+ *
  * @private
  * @memberOf SilenceDetector.prototype
  */
@@ -251,43 +251,43 @@ function _isSilent(inputBuffer){
 			if (speechCount >= pauseCount){
 				++blobSizeCount;
 				++silenceCount;
-			} 
+			}
 			else {
 				speechCount = 0;
 				++lastInput;
 			}
-		} 
+		}
 		else {
 			if (speechCount >= pauseCount){
 				silenceCount = 0;
 				++blobSizeCount;
-			} 
+			}
 			else {
 				++speechCount;
 				++lastInput;
 			}
 		}
 		if (speechCount > pauseCount){
-			
+
 		}
 		if (blobSizeCount >= maxBlobSize){
 			_sendMessage(SEND_PARTIAL);
 			blobSizeCount = 0;
 		}
 		if (speechCount === 0 && lastInput > resetCount){
-			this.postMessage(CLEAR);
+			_sendMessage(CLEAR);
 			lastInput = 0;
 		}
-		
+
 	}
 }
 
 /**
  * Starts silence detection:
  * resets everything and switches the worker to recording mode.
- * 
+ *
  * @fires SilenceDetectionStarted
- * 
+ *
  * @private
  * @memberOf SilenceDetector.prototype
  */
@@ -303,9 +303,9 @@ function _start(){
 /**
  * Stops silence detection:
  * resets everything and switches the worker off recording mode.
- * 
+ *
  * @fires SilenceDetectionStopped
- * 
+ *
  * @private
  * @memberOf SilenceDetector.prototype
  */
@@ -323,12 +323,12 @@ function _stop(){
 
 /**
  * send a message to the owner of the WebWorker
- * 
+ *
  * @private
  * @memberOf SilenceDetector.prototype
  */
 function _sendMessage(msg){
-	
+
 	threadRef.postMessage(msg);
 }
 
@@ -341,7 +341,7 @@ function _sendMessage(msg){
  * @param {Buffer} [buffer]
  * 			MUST be provided if cmd is "isSilent"
  * 			see #_isSilent
- * 
+ *
  * @private
  * @memberOf SilenceDetector.prototype
  */
@@ -367,7 +367,7 @@ function _processesCommand(cmd, config, buffer){
 /**
  * @class SilenceDetector
  */
-return {
+var silenceDetector = {
 	/**
 	 * @copydoc #_initDetection
 	 * @public
@@ -402,7 +402,7 @@ return {
 	},
 	/**
 	 * Executes one of the functions.
-	 * 
+	 *
 	 * @param {String} cmd
 	 * 				command/function name that should be executed, one of
 	 * 				<code>"initDetection" | "start" | "isSilent" | "stop"</code>
@@ -410,7 +410,7 @@ return {
 	 * 				the configuration options, if <code>cmd</code> is "initDetection", see {@link #_initDetection}
 	 * @param {Blob} [eventData.Buffer] OPTIONAL
 	 * 				the audio data, if <code>cmd</code> is "isSilent", see {@link #_isSilent}
-	 * 
+	 *
 	 * @memberOf SilenceDetector
 	 */
 	'exec': function(cmd, eventData){
@@ -425,4 +425,8 @@ return {
 	}
 };
 
-})(this);
+threadRef.SilenceDetector = silenceDetector;
+
+return silenceDetector;
+
+})(self);

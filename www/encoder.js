@@ -10,7 +10,7 @@ function exportForASR(recBuffers, recLength){
     //get raw-data length:
     var totalBufferSize = recLength;
 
-    //reset current buffers size 
+    //reset current buffers size
     recLength = 0;
 
     //get & reset current buffer content
@@ -53,11 +53,11 @@ function mergeBuffersUint(channelBuffer, recordingLength){
 	return result;
 }
 
-var self = this;
+// var self = this;
 self.onmessage = function(e) {
-	
+
 	switch (e.data.cmd) {
-	
+
 	case 'init':
 		initRec(e.data.config);
 		encoderInstance.encoderInit();
@@ -76,15 +76,15 @@ self.onmessage = function(e) {
 		encoderInstance.encoderCleanUp();
 		self.postMessage({cmd: 'encFinished', buf: data});
 		break;
-//		from RecWorkExt		
+//		from RecWorkExt
 	case 'record':
-		
+
 		//buffer audio data
 		recordRec(e.data.buffer);
-		
+
 		//detect noise (= speech) and silence in audio:
 		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
-		
+
 		break;
 	case 'getBuffers':
 		getBuffers(e.data? e.data.id : void(0));//MOD use id-property as argument, if present
@@ -100,7 +100,7 @@ self.onmessage = function(e) {
 		SilenceDetector.exec(e.data.cmd, e.data);
 		break;
 	}
-	
+
 };
 
 //Rec
@@ -115,26 +115,26 @@ function recordRec(inputBuffer){
 }
 
 function getBuffers(id) {
-	
+
   var buffers = [];
   buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
   buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
-  
+
   if(typeof id !== 'undefined'){
     self.postMessage({buffers: buffers, id: id, size: recLength});
   } else {
     buffers.size = recLength;
-    this.postMessage(buffers);
+    self.postMessage(buffers);
   }
-  
+
 }
 
 function getBuffersFor(id) {
 	var buffers = [];
-	
+
 	buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
 	buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
-	//this.postMessage({buffers: buffers, id: id});
+	//self.postMessage({buffers: buffers, id: id});
 	self.postMessage({buffers: buffers, id: id, size: recLength});
 }
 
