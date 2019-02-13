@@ -8,7 +8,8 @@
     "webworker": "./www/webworker"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "pluginexport"
   },
   "repository": {
     "type": "git",
@@ -27,5 +28,8 @@
   },
   "peerDependencies": {
     "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack.git"
+  },
+  "devDependencies": {
+    "mmir-plugin-exports": "git+https://gitlab-cos.b.dfki.de/mmir/mmir-plugin-exports.git"
   }
 }
