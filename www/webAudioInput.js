@@ -74,10 +74,10 @@ return {
 			'webasratntimpl.js':     _workerImpl.amr,
 			'webasrgooglev1impl.js': _workerImpl.wav,
 			'webasrgoogleimpl.js':   _workerImpl.flac,
-			'webasrnuanceimpl.js':   _workerImpl.wav,
+			'webasrnuanceimpl.js':   _workerImpl.amr,
 
-			'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.wav,
 			'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
+			'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 
 			'_default':              _workerImpl.wav
 		};
@@ -852,6 +852,7 @@ return {
     				startUserMedia(function onRecStart(){
     					audioProcessor.initRec && audioProcessor.initRec();
     					recorder && recorder.clear();
+							audio_context && audio_context.resume();
         				recorder && recorder.record();
         				silenceDetection && silenceDetection.postMessage({cmd: 'start'});
     				});
@@ -966,6 +967,7 @@ return {
     				startUserMedia(function(){
     					audioProcessor.initRec && audioProcessor.initRec();
     					recorder && recorder.clear();
+							audio_context && audio_context.resume();
         				recorder && recorder.record();
         				silenceDetection && silenceDetection.postMessage({cmd: 'start'});
 
