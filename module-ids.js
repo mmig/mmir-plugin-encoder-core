@@ -8,7 +8,7 @@ var _paths = {
   "mmir-plugin-encoder-core": "www/webAudioInput.js"
 };
 var _workers = [
-  "mmir-plugin-encoder-core/recorderWorkerExt"
+  "mmir-plugin-encoder-core/workers/recorderWorkerExt"
 ];
 var _exportedModules = [
   "mmir-plugin-encoder-core"
