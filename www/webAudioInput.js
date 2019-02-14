@@ -25,7 +25,11 @@
  */
 
 
-define(['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/languageManager', 'mmirf/constants', 'mmirf/logger'], function(mediaManager, config, lang, consts, Logger){
+define(
+	['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/constants', 'mmirf/logger'],//, 'mmirf/languageManager'],
+	function(
+		mediaManager, config, consts, Logger//, lang
+){
 
 return {
 	/**  @memberOf Html5AudioInput# */
@@ -38,7 +42,7 @@ return {
 		 * Default implementation for WebAudioInput: Google Recognition Web Service v1
 		 * @memberOf Html5AudioInput#
 		 */
-		var _defaultImplFile = 'webasrGoogleImpl.js';
+		var _defaultImplFile = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-plugin-asr-google-xhr.js' : 'webasrGoogleImpl.js';
 
 		/**
 		 * Map for codec names to implementation files
@@ -71,15 +75,18 @@ return {
 		 * @memberOf Html5AudioInput#
 		 */
 		var _defaultWorkerImpl = {
-			'webasratntimpl.js':     _workerImpl.amr,
-			'webasrgooglev1impl.js': _workerImpl.wav,
 			'webasrgoogleimpl.js':   _workerImpl.flac,
 			'webasrnuanceimpl.js':   _workerImpl.amr,
 
 			'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
 			'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 
-			'_default':              _workerImpl.wav
+			'_default':              _workerImpl.wav,
+
+			/** @deprecated */
+			'webasratntimpl.js':     _workerImpl.amr,
+			/** @deprecated */
+			'webasrgooglev1impl.js': _workerImpl.wav
 		};
 
 		/**
