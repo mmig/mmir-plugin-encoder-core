@@ -4,9 +4,9 @@ export * from './config';
 /// <reference types="mmir-lib" />
 import { ASROptions , MediaManager , ASROnStatus, ASROnError, MediaEventType , MediaEventHandler } from 'mmir-lib';
 
-declare type EncoderType = 'amr' | 'flac' | 'speex' | 'wav';
+export type EncoderType = 'amr' | 'flac' | 'speex' | 'wav';
 
-declare interface ASREncoderOptions extends ASROptions {
+export interface ASREncoderOptions extends ASROptions {
   //NOT SUPPORTED via options, must be set via configuration!
   // /**
   //  * the audio-encoder for converting "raw" PCM audio (from microphone)
@@ -16,9 +16,9 @@ declare interface ASREncoderOptions extends ASROptions {
   // encoder?: EncoderType | string;
 }
 
-declare type AudioStartedEventType = 'webaudioinputstarted';
+export type AudioStartedEventType = 'webaudioinputstarted';
 
-declare interface MediaManagerWebInput extends MediaManager {
+export interface MediaManagerWebInput extends MediaManager {
   recognize: (options?: ASREncoderOptions, statusCallback?: ASROnStatus, failureCallback?: ASROnError, isIntermediateResults?: boolean) => void;
   startRecord: (options?: ASREncoderOptions, successCallback?: ASROnStatus, failureCallback?: ASROnError, intermediateResults?: boolean) => void;
   stopRecord: (options?: ASREncoderOptions, successCallback?: ASROnStatus, failureCallback?: ASROnError) => void;
