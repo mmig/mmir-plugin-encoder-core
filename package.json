@@ -7,6 +7,7 @@
     "lib": "./www",
     "webworker": "./www/webworker"
   },
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "pluginexport"
@@ -27,9 +28,12 @@
     "platforms": []
   },
   "peerDependencies": {
-    "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack.git"
+    "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
   },
   "devDependencies": {
     "mmir-plugin-exports": "git+https://gitlab-cos.b.dfki.de/mmir/mmir-plugin-exports.git"
+  },
+  "dependencies": {
+    "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
   }
 }
