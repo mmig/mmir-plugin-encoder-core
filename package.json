@@ -4,8 +4,7 @@
   "description": "Cordova plugin for the MMIR framework that provides core functionality for running (JavaScript) audio encoders via WebWorkers.",
   "main": "./www/webAudioInput.js",
   "directories": {
-    "lib": "./www",
-    "webworker": "./www/webworker"
+    "lib": "./www"
   },
   "types": "index.d.ts",
   "scripts": {
@@ -27,13 +26,15 @@
     "id": "mmir-plugin-encoder-core",
     "platforms": []
   },
+  "mmir": {
+    "workers": [
+      "./www/webworker"
+    ]
+  },
   "peerDependencies": {
     "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
   },
   "devDependencies": {
     "mmir-plugin-exports": "git+https://gitlab-cos.b.dfki.de/mmir/mmir-plugin-exports.git"
-  },
-  "dependencies": {
-    "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
   }
 }
