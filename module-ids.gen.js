@@ -44,7 +44,7 @@ function _getAll(type, isResolve){
     });
   }
   this.dependencies.forEach(function(dep){
-    var depExports = require(dep + '/module-ids.js');
+    var depExports = require(dep + '/module-ids.gen.js');
     var depData = depExports.getAll(type, isResolve);
     if(isArray){
       _join(depData, result, dupl);
