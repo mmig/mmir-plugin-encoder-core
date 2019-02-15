@@ -1,6 +1,6 @@
 
 /**
- * (optional) entry "html5AudioInput" in main configuration.json
+ * (optional) entry "webAudioInput" in main configuration.json
  * for settings of WebAudioInput module.
  *
  * Some of these settings can also be specified by using the options argument
@@ -9,22 +9,17 @@
  * (if specified via the options, values will override configuration settings).
  */
 export interface WebAudioInputConfigEntry {
-  html5AudioInput?: WebAudioInputConfig;
+  webAudioInput?: WebAudioInputConfig;
 }
 
 export interface WebAudioInputConfig {
 
-    silenceDetector?: SilenceDetectorConfig;
+  /** for (simple) end-of-speech detection */
+  silenceDetector?: SilenceDetectorConfig;
 
     //NOT IMPLEMENTED/SUPPORTED, TODO?
     // /** @example  "2000000" */
     // silenceBuffer?: number|string;
-
-    //not used anymore:
-    // /** @example  "ws://localhost:9999" */
-    // webSocketAddress: string;
-    // /** @example  "4096" */
-    // soundPackageSize: "4096";
 }
 
 export interface SilenceDetectorConfig {
@@ -43,11 +38,54 @@ export interface SilenceDetectorConfig {
    * @default 15
    */
   resetCount: number | string;
+}
 
-  //NOT IMPLEMENTED/SUPPORTED, TODO?
-  // /**
-  //  * @type integer, or stringified integer
-  //  * @default 3
-  //  */
-  // minimalSpeachCount: number | string;
+/**
+ * Known encoders:
+ * can be specified via plugin-configuration
+ *
+ * @exmaple
+ *  <pluginName>: {
+ *    "encoder": "flac",
+ *    ....
+ *  }
+ *
+ * TODO extract this from implementation www/webAudioInput.js::_workerImpl
+ */
+export enum DefaultEncoders {
+  amr = 'mmir-plugin-encoder-amr',
+  flac = 'mmir-plugin-encoder-flac',
+  wav = 'mmir-plugin-encoder-core/workers/recorderWorkerExt'
+  //[TODO] speex = 'mmir-plugin-encoder-speex'
+}
+
+/*
+ * Know web-audio implementations
+ *
+ * TODO extract this from implementation www/webAudioInput.js::_defaultWorkerImpl
+ */
+
+export type ASRGoogleXHRImplType = 'mmir-plugin-asr-google-xhr.js';
+export type ASRNuanceXHRImplType = 'mmir-plugin-asr-nuance-xhr.js';
+export type ASRNuanceWSImplType = 'mmir-plugin-asr-nuance-ws.js';
+
+
+//////////////////////////////////// Config within "mediaManager.plugin.env" ////////////////////
+//TODO move (& extend) this? to mmir-lib typings?
+
+export type WebAudioInputNameType = 'mmir-plugin-encoder-core';
+
+export type WebAudioInputImplType = ASRGoogleXHRImplType | ASRNuanceXHRImplType | ASRNuanceWSImplType;
+
+export interface MediaManagerConfigWebAudioInputEntry {
+  mod: WebAudioInputNameType;
+  config?: WebAudioInputImplType | string;
+  ctx?: string;
+}
+
+export type MediaPluginEnvType = 'browser' | 'cordova' | 'android' | 'ios';
+
+export interface MediaManagerPluginEntry {
+  env?: Array<MediaPluginEnvType | string >;
+  ctx?: string;
 }
