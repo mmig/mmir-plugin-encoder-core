@@ -44,12 +44,14 @@ if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
   importScripts('silenceDetector.js');
 }
 
+;(function(global){
+
 var recLength = 0,
   recBuffersL = [],
   recBuffersR = [],
   sampleRate;
 
-self.onmessage = function(e){
+global.onmessage = function(e){
   switch(e.data.cmd){
     case 'init':
       init(e.data.config);
@@ -87,32 +89,32 @@ self.onmessage = function(e){
   }
 };
 
-function init(config){
+global.init = function(config){
   sampleRate = config.sampleRate;
 }
 
-function record(inputBuffer){
+global.record = function(inputBuffer){
   recBuffersL.push(inputBuffer[0]);
   recBuffersR.push(inputBuffer[1]);
   recLength += inputBuffer[0].length;
 }
 
-function exportWAV(type){
+global.exportWAV = function(type){
   var bufferL = mergeBuffersFloat(recBuffersL, recLength);
   var bufferR = mergeBuffersFloat(recBuffersR, recLength);
   var interleaved = interleave(bufferL, bufferR);
   var dataview = encodeWAV(interleaved);
   var audioBlob = new Blob([dataview], { type: type });
 
-  self.postMessage(audioBlob);
+  global.postMessage(audioBlob);
 }
 
-function exportMonoWAV(type){
+global.exportMonoWAV = function(type){
   var bufferL = mergeBuffersFloat(recBuffersL, recLength);
   var dataview = encodeWAV(bufferL, true);
   var audioBlob = new Blob([dataview], { type: type });
 
-  self.postMessage(audioBlob);
+  global.postMessage(audioBlob);
 }
 
 /**
@@ -121,28 +123,28 @@ function exportMonoWAV(type){
  * @param [id] OPTIONAL
  * 		the transaction ID (if provided, the ID will be included in the sent message)
  */
-function getBuffers(id) {
+global.getBuffers = function(id) {
 
   var buffers = [];
   buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
   buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
 
   if(typeof id !== 'undefined'){
-    self.postMessage({buffers: buffers, id: id, size: recLength});
+    global.postMessage({buffers: buffers, id: id, size: recLength});
   } else {
     buffers.size = recLength;
-    self.postMessage(buffers);
+    global.postMessage(buffers);
   }
 
 }
 
-function clear(){
+global.clear = function(){
   recLength = 0;
   recBuffersL = [];
   recBuffersR = [];
 }
 
-function mergeBuffersFloat(recBuffers, recLength){
+global.mergeBuffersFloat = function(recBuffers, recLength){
   var result = new Float32Array(recLength);
   var offset = 0;
   for (var i = 0; i < recBuffers.length; i++){
@@ -152,7 +154,7 @@ function mergeBuffersFloat(recBuffers, recLength){
   return result;
 }
 
-function interleave(inputL, inputR){
+global.interleave = function(inputL, inputR){
   var length = inputL.length + inputR.length;
   var result = new Float32Array(length);
 
@@ -167,20 +169,20 @@ function interleave(inputL, inputR){
   return result;
 }
 
-function floatTo16BitPCM(output, offset, input){
+global.floatTo16BitPCM = function(output, offset, input){
   for (var i = 0; i < input.length; i++, offset+=2){
     var s = Math.max(-1, Math.min(1, input[i]));
     output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
   }
 }
 
-function writeString(view, offset, string){
+global.writeString = function(view, offset, string){
   for (var i = 0; i < string.length; i++){
     view.setUint8(offset + i, string.charCodeAt(i));
   }
 }
 
-function encodeWAV(samples, mono){
+global.encodeWAV = function(samples, mono){
 
   var buffer = new ArrayBuffer(44 + samples.length * 2);
   var view = new DataView(buffer);
@@ -221,3 +223,5 @@ function encodeWAV(samples, mono){
 
   return view;
 }
+
+})(typeof window !== 'undefined'? window : typeof self !== 'undefined'? self : typeof global !== 'undefined'? global : this);

@@ -1,3 +1,6 @@
+
+;(function(global){
+
 var recLength = 0,
     recLengthFlac = 0,
     recBuffers = [],
@@ -5,7 +8,7 @@ var recLength = 0,
 	recBuffersR = [],
 	sampleRate=-1; //PB - opti
 
-function exportForASR(recBuffers, recLength){
+global.exportForASR = function(recBuffers, recLength){
 
     //get raw-data length:
     var totalBufferSize = recLength;
@@ -25,13 +28,13 @@ function exportForASR(recBuffers, recLength){
 }
 
 
-function record(inputBuffer){
+global.record = function(inputBuffer){
 	  recBuffers.push(inputBuffer);
 	  recLength += inputBuffer.length;
 	  console.log("encoder RECORD called!");
 	}
 
-function getMergedBufferLength(bufferList){
+global.getMergedBufferLength = function(bufferList){
 	  var i=0, size = bufferList.length, total=0;
 	  for(;i < size; ++i){
 		  total += bufferList[i].length;
@@ -39,7 +42,7 @@ function getMergedBufferLength(bufferList){
 	  return total;
 }
 
-function mergeBuffersUint(channelBuffer, recordingLength){
+global.mergeBuffersUint = function(channelBuffer, recordingLength){
 	recordingLength = getMergedBufferLength(channelBuffer);
 	var result = new Uint8Array(recordingLength);
 	var offset = 0;
@@ -53,8 +56,7 @@ function mergeBuffersUint(channelBuffer, recordingLength){
 	return result;
 }
 
-// var self = this;
-self.onmessage = function(e) {
+global.onmessage = function(e) {
 
 	switch (e.data.cmd) {
 
@@ -74,7 +76,7 @@ self.onmessage = function(e) {
 		console.log("encodedExt: "+encoderInstance.encoded.length);
 		var data = new Blob([encoderInstance.encoded]);
 		encoderInstance.encoderCleanUp();
-		self.postMessage({cmd: 'encFinished', buf: data});
+		global.postMessage({cmd: 'encFinished', buf: data});
 		break;
 //		from RecWorkExt
 	case 'record':
@@ -104,49 +106,49 @@ self.onmessage = function(e) {
 };
 
 //Rec
-function initRec(config){
+global.initRec = function(config){
   sampleRate = config.sampleRate;
 }
 
-function recordRec(inputBuffer){
+global.recordRec = function(inputBuffer){
   recBuffersL.push(inputBuffer[0]);
   recBuffersR.push(inputBuffer[1]);
   recLength += inputBuffer[0].length;
 }
 
-function getBuffers(id) {
+global.getBuffers = function(id) {
 
   var buffers = [];
   buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
   buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
 
   if(typeof id !== 'undefined'){
-    self.postMessage({buffers: buffers, id: id, size: recLength});
+    global.postMessage({buffers: buffers, id: id, size: recLength});
   } else {
     buffers.size = recLength;
-    self.postMessage(buffers);
+    global.postMessage(buffers);
   }
 
 }
 
-function getBuffersFor(id) {
+global.getBuffersFor = function(id) {
 	var buffers = [];
 
 	buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
 	buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
-	//self.postMessage({buffers: buffers, id: id});
-	self.postMessage({buffers: buffers, id: id, size: recLength});
+	//global.postMessage({buffers: buffers, id: id});
+	global.postMessage({buffers: buffers, id: id, size: recLength});
 }
 
-function clear(){
-  console.warn('clear REC '+recLength);
+global.clear = function(){
+  console.debug('clear REC '+recLength);
   recLength = 0;
   recBuffersL = [];
   recBuffersR = [];
 }
 
 
-function mergeBuffersFloat(recBuffers, recLength){
+global.mergeBuffersFloat = function(recBuffers, recLength){
   var result = new Float32Array(recLength);
   var offset = 0;
   for (var i = 0; i < recBuffers.length; i++){
@@ -155,3 +157,5 @@ function mergeBuffersFloat(recBuffers, recLength){
   }
   return result;
 }
+
+})(typeof window !== 'undefined'? window : typeof self !== 'undefined'? self : typeof global !== 'undefined'? global : this);
