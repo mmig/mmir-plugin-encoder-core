@@ -82,10 +82,3 @@ export interface MediaManagerConfigWebAudioInputEntry {
   config?: WebAudioInputImplType | string;
   ctx?: string;
 }
-
-export type MediaPluginEnvType = 'browser' | 'cordova' | 'android' | 'ios';
-
-export interface MediaManagerPluginEntry {
-  env?: Array<MediaPluginEnvType | string >;
-  ctx?: string;
-}
