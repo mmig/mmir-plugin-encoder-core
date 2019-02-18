@@ -51,32 +51,34 @@ var recLength = 0,
   recBuffersR = [],
   sampleRate;
 
+gobal.isDebug = false;
+
 global.onmessage = function(e){
   switch(e.data.cmd){
     case 'init':
-      init(e.data.config);
+      global.init(e.data.config);
       break;
     case 'exportWAV':
-      exportWAV(e.data.type);
+      global.exportWAV(e.data.type);
       break;
     case 'exportMonoWAV':
-      exportMonoWAV(e.data.type);
+      global.exportMonoWAV(e.data.type);
       break;
     //MODIFICATIONs russa:
 	case 'record':
 
 		//buffer audio data
-		record(e.data.buffer);
+		global.record(e.data.buffer);
 
 		//detect noise (= speech) and silence in audio:
 		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
 
 		break;
 	case 'getBuffers':
-		getBuffers(e.data? e.data.id : void(0));//MOD use id-property as argument, if present
+		global.getBuffers(e.data? e.data.id : void(0));//MOD use id-property as argument, if present
 		break;
 	case 'clear':
-		clear();
+		global.clear();
 		break;
 	//////////////////////// silence detection / processing:
 	case 'initDetection':
@@ -91,6 +93,7 @@ global.onmessage = function(e){
 
 global.init = function(config){
   sampleRate = config.sampleRate;
+  global.isDebug = config.isDebug;
 }
 
 global.record = function(inputBuffer){
@@ -100,18 +103,18 @@ global.record = function(inputBuffer){
 }
 
 global.exportWAV = function(type){
-  var bufferL = mergeBuffersFloat(recBuffersL, recLength);
-  var bufferR = mergeBuffersFloat(recBuffersR, recLength);
-  var interleaved = interleave(bufferL, bufferR);
-  var dataview = encodeWAV(interleaved);
+  var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+  var bufferR = global.mergeBuffersFloat(recBuffersR, recLength);
+  var interleaved = global.interleave(bufferL, bufferR);
+  var dataview = global.encodeWAV(interleaved);
   var audioBlob = new Blob([dataview], { type: type });
 
   global.postMessage(audioBlob);
 }
 
 global.exportMonoWAV = function(type){
-  var bufferL = mergeBuffersFloat(recBuffersL, recLength);
-  var dataview = encodeWAV(bufferL, true);
+  var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+  var dataview = global.encodeWAV(bufferL, true);
   var audioBlob = new Blob([dataview], { type: type });
 
   global.postMessage(audioBlob);
@@ -126,8 +129,8 @@ global.exportMonoWAV = function(type){
 global.getBuffers = function(id) {
 
   var buffers = [];
-  buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
-  buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
+  buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
+  buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
 
   if(typeof id !== 'undefined'){
     global.postMessage({buffers: buffers, id: id, size: recLength});

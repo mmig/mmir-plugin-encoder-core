@@ -84,7 +84,8 @@ define(function(){
     	worker.postMessage({
         	cmd: 'init',
         	config: {
-        		sampleRate: this.context.sampleRate
+        		sampleRate: this.context.sampleRate,
+            isDebug: config.debug
         	}
         });
 

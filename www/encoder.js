@@ -8,6 +8,8 @@ var recLength = 0,
 	recBuffersR = [],
 	sampleRate=-1; //PB - opti
 
+global.isDebug = false;
+
 global.exportForASR = function(recBuffers, recLength){
 
     //get raw-data length:
@@ -20,7 +22,7 @@ global.exportForASR = function(recBuffers, recLength){
     var buffers = recBuffers.splice(0, recBuffers.length);
 
     //convert buffers into one single buffer
-    var samples = mergeBuffersUint( buffers, totalBufferSize);
+    var samples = global.mergeBuffersUint( buffers, totalBufferSize);
     var the_blob = new Blob([samples]);
 
     return the_blob;
@@ -31,7 +33,7 @@ global.exportForASR = function(recBuffers, recLength){
 global.record = function(inputBuffer){
 	  recBuffers.push(inputBuffer);
 	  recLength += inputBuffer.length;
-	  console.log("encoder RECORD called!");
+	  if(global.isDebug) console.log("encoder RECORD called!");
 	}
 
 global.getMergedBufferLength = function(bufferList){
@@ -52,7 +54,7 @@ global.mergeBuffersUint = function(channelBuffer, recordingLength){
 	  result.set(buffer, offset);
 	  offset += buffer.length;
 	}
-	//console.log("encoder MERGE called!");
+	//if(global.isDebug) console.log("encoder MERGE called!");
 	return result;
 }
 
@@ -61,19 +63,19 @@ global.onmessage = function(e) {
 	switch (e.data.cmd) {
 
 	case 'init':
-		initRec(e.data.config);
+		global.initRec(e.data.config);
 		encoderInstance.encoderInit();
 		break;
 	case 'encode':
-		console.warn('encode '+recLength);
-		var buffMerged = mergeBuffersFloat(recBuffersL, recLength);
+		if(global.isDebug) console.debug('encode '+recLength);
+		var buffMerged = global.mergeBuffersFloat(recBuffersL, recLength);
 		encoderInstance.encodeBuffer(buffMerged);
-		clear();
+		global.clear();
 		break;
 	case 'encClose':
-		console.log("encoder finish: ");
+		if(global.isDebug) console.log("encoder finish: ");
 		encoderInstance.encoderFinish();
-		console.log("encodedExt: "+encoderInstance.encoded.length);
+		if(global.isDebug) console.log("encodedExt: "+encoderInstance.encoded.length);
 		var data = new Blob([encoderInstance.encoded]);
 		encoderInstance.encoderCleanUp();
 		global.postMessage({cmd: 'encFinished', buf: data});
@@ -82,17 +84,17 @@ global.onmessage = function(e) {
 	case 'record':
 
 		//buffer audio data
-		recordRec(e.data.buffer);
+		global.recordRec(e.data.buffer);
 
 		//detect noise (= speech) and silence in audio:
 		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
 
 		break;
 	case 'getBuffers':
-		getBuffers(e.data? e.data.id : void(0));//MOD use id-property as argument, if present
+		global.getBuffers(e.data? e.data.id : void(0));//MOD use id-property as argument, if present
 		break;
 	case 'clear':
-		clear();
+		global.clear();
 		break;
 	//////////////////////// silence detection / processing:
 	case 'initDetection':
@@ -108,6 +110,7 @@ global.onmessage = function(e) {
 //Rec
 global.initRec = function(config){
   sampleRate = config.sampleRate;
+  global.isDebug = config.isDebug;
 }
 
 global.recordRec = function(inputBuffer){
@@ -119,8 +122,8 @@ global.recordRec = function(inputBuffer){
 global.getBuffers = function(id) {
 
   var buffers = [];
-  buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
-  buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
+  buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
+  buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
 
   if(typeof id !== 'undefined'){
     global.postMessage({buffers: buffers, id: id, size: recLength});
@@ -134,14 +137,14 @@ global.getBuffers = function(id) {
 global.getBuffersFor = function(id) {
 	var buffers = [];
 
-	buffers.push( mergeBuffersFloat(recBuffersL, recLength) );
-	buffers.push( mergeBuffersFloat(recBuffersR, recLength) );
+	buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
+	buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
 	//global.postMessage({buffers: buffers, id: id});
 	global.postMessage({buffers: buffers, id: id, size: recLength});
 }
 
 global.clear = function(){
-  console.debug('clear REC '+recLength);
+  if(global.isDebug) console.debug('clear REC '+recLength);
   recLength = 0;
   recBuffersL = [];
   recBuffersR = [];

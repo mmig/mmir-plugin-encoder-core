@@ -26,9 +26,9 @@
 
 
 define(
-	['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/constants', 'mmirf/logger'],//, 'mmirf/languageManager'],
+	['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/constants', 'mmirf/logger', 'module'],//, 'mmirf/languageManager'],
 	function(
-		mediaManager, config, consts, Logger//, lang
+		mediaManager, config, consts, Logger, mod//, lang
 ){
 
 return {
@@ -417,7 +417,8 @@ return {
 
 			_pluginName = impl.getPluginName();
 
-			_logger = Logger.create(_pluginName);
+			var modConf = mod.config(mod);
+			_logger = Logger.create(_pluginName, modConf? modConf.logLevel : void(0));
 
 			var initCalls = audioProcessor._cached;
 			audioProcessor = impl;
@@ -525,7 +526,7 @@ return {
     				}
 
     				var recorderWorkerPath = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? workerImpl : consts.getWorkerPath()+workerImpl;
-    				recorder = new Recorder(input, {workerPath: recorderWorkerPath});
+    				recorder = new Recorder(input, {workerPath: recorderWorkerPath, debug: _logger.isDebug()});
     			} else {
     				recorder.init(input);
     			}
