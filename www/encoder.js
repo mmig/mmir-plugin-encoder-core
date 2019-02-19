@@ -5,7 +5,8 @@ var recLength = 0,
     recBuffers = [],
     recBuffersL = [],
     recBuffersR = [],
-    sampleRate=-1,
+    sampleRate = -1,
+    eosDetected = false
     bufferSize,
     targetSampleRate
     resampler;
@@ -85,11 +86,37 @@ global.onmessage = function(e) {
 //		from RecWorkExt
 	case 'record':
 
+    if(eosDetected){
+      eosDetected = false;
+      var tmpBuffer = SilenceDetector.loadBuffer();
+      console.warn("encoder onmessage record loadBuffers");//FIXME DEBUG
+      if(e.data.buffer.length === 2){
+
+        if(tmpBuffer && tmpBuffer.length > 0){
+          console.log("tmpBuffer1: ", tmpBuffer);//FIXME DEBUG
+          for(i=0; i < tmpBuffer.length; i++){
+            var _recBuffer = new Array(2);
+            _recBuffer[0] = tmpBuffer[i];
+            _recBuffer[1] = tmpBuffer[i];
+            global.record(_recBuffer);
+          }
+        }
+
+      } else {
+        console.log("tmpBuffer2: ", tmpBuffer);//FIXME DEBUG
+        for(i=0; i < tmpBuffer.length; i++){
+          global.record(tmpBuffer[i]);
+        }
+      }
+    }
+
 		//buffer audio data
 		global.record(e.data.buffer);
 
 		//detect noise (= speech) and silence in audio:
-		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
+		eosDetected = SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
+		console.log("eosDetected: " + eosDetected);//FIXME DEBUG
+		self.postMessage({cmd: 'fireChunkStored'});
 
 		break;
 	case 'getBuffers':

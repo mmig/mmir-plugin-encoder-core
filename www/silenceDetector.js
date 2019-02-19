@@ -68,6 +68,11 @@ var blobSizeCount = 0;
 /** @memberOf SilenceDetector.prototype */
 var blobNumber = 0;
 
+/** @memberOf SilenceDetector.prototype */
+var tmpBuffer = [];
+/** @memberOf SilenceDetector.prototype */
+var tmpBufferSize = 3; //Max tmpBufferSize  TODO make configurable?
+
 //events:
 /**
  * Fired, when detection has started
@@ -183,6 +188,30 @@ function _initDetection(config){
 }
 
 /**
+ * stores input buffer into #tempBuffer:
+ * if #tempBuffer would exceed #tmpBufferSize, removes the oldest entry
+ * before pushing the new inputBuffer.
+ *
+ * @param       {TypedArray} inputBuffer the current audio input buffer
+ */
+function _saveBuffer(inputBuffer){
+	if(tmpBuffer.length >= tmpBufferSize){
+		tmpBuffer.shift();
+	}
+	tmpBuffer.push(inputBuffer);
+}
+
+/**
+ * returns current temporary buffer & clears temporary buffer
+ * @return      {Array<TypedArray>} the last n-buffered input-buffers
+ */
+function _loadBuffer(){
+	var ret = tmpBuffer;
+	tmpBuffer = [];
+	return ret;
+}
+
+/**
  * processes an audioBlob and decides whether or not there has been a "real input"
  * (min. {@link #speechCount} "loud" blobs in a row) and a "real pause"
  * (min. {@link #pauseCount} silent blobs in a row).
@@ -218,13 +247,16 @@ function _initDetection(config){
  *
  * @param {Blob} inputBuffer
  * 			the audio Blob
+ * @returns {Boolean} <code>true</code> if silence (after speech/loud part) was detected, i.e. when message #SILENCE was posted
  *
  * @private
  * @memberOf SilenceDetector.prototype
  */
 function _isSilent(inputBuffer){
+  var longSilence = false;
 	if (recording){
 		++blobNumber;
+    _saveBuffer(inputBuffer);
 		if (blobNumber === 3){
 			//at the very start (i.e. after 3 blobs): signal "started"
 			_sendMessage(AUDIO_STARTED);
@@ -242,6 +274,7 @@ function _isSilent(inputBuffer){
 		}
 		if (thisSilent){
 			if (silenceCount >= pauseCount){
+        longSilence = true;
 				_sendMessage(SILENCE);
 				speechCount = 0;
 				silenceCount = 0;
@@ -278,8 +311,8 @@ function _isSilent(inputBuffer){
 			_sendMessage(CLEAR);
 			lastInput = 0;
 		}
-
 	}
+  return longSilence;
 }
 
 /**
@@ -368,7 +401,15 @@ function _processesCommand(cmd, config, buffer){
  * @class SilenceDetector
  */
 var silenceDetector = {
-	/**
+  /**
+   * @copydoc #_loadBuffer
+   * @public
+   * @memberOf SilenceDetector
+   */
+  'loadBuffer': function(){
+		return _loadBuffer();
+	},
+  /**
 	 * @copydoc #_initDetection
 	 * @public
 	 * @memberOf SilenceDetector
@@ -390,7 +431,7 @@ var silenceDetector = {
 	 * @memberOf SilenceDetector
 	 */
 	'isSilent': function(buffer){
-		_isSilent(buffer);
+		return _isSilent(buffer);
 	},
 	/**
 	 * @copydoc #_stop

@@ -187,6 +187,22 @@ define(function(){
         	}
     		return;
     	}
+
+      if(e.data && e.data.cmd === 'fireChunkStored'){
+    		// _fireEvent('onchunkstored',null);
+        if(selfRef.onchunkstored){
+          selfRef.onchunkstored(null);
+        }
+    		return;
+    	}
+
+
+    	if(e.data instanceof DataView){
+        console.error('received DataView from worker');//FIXME DEBUG
+    		currCallback(e.data);
+    		return;
+    	}
+
     	///////////TODO MOD end
 
     	var blob = e.data;
