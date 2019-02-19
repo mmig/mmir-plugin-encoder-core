@@ -55,12 +55,14 @@ return {
 			var _workerImpl = {
 				'amr':  'mmir-plugin-encoder-amr',
 				'flac': 'mmir-plugin-encoder-flac',
+				'speex': 'mmir-plugin-encoder-speex',
 				'wav':  'mmir-plugin-encoder-core/workers/recorderWorkerExt'
 			};
 		} else {
 			var _workerImpl = {
 				'amr':  'amrEncoder.js',
 				'flac': 'flacEncoder.js',
+				'speex': 'speexEncoder.js',
 				'wav':  'recorderWorkerExt.js'
 			};
 		}
@@ -76,9 +78,11 @@ return {
 		 */
 		var _defaultWorkerImpl = {
 			'webasrgoogleimpl.js':   _workerImpl.flac,
+			'webasrnuancewsimpl.js':   _workerImpl.speex,
 			'webasrnuanceimpl.js':   _workerImpl.amr,
 
 			'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
+			'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
 			'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 
 			'_default':              _workerImpl.wav,
