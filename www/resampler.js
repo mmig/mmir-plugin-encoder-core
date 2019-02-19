@@ -83,7 +83,7 @@ Resampler.prototype.compileLinearInterpolationFunction = function () {
     }\
     return this.outputBuffer;";
 
-  this.resampler = Function("buffer", toCompile);
+  this.resample = Function("buffer", toCompile);
 };
 
 Resampler.prototype.compileMultiTapFunction = function () {
@@ -155,5 +155,7 @@ Resampler.prototype.compileMultiTapFunction = function () {
 Resampler.prototype.bypassResampler = function (inputBuffer) {
   return inputBuffer;
 };
+
+global.Resampler = Resampler;
 
 })(typeof window !== 'undefined'? window : typeof self !== 'undefined'? self : typeof global !== 'undefined'? global : this);
