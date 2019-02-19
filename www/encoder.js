@@ -2,11 +2,13 @@
 ;(function(global){
 
 var recLength = 0,
-    recLengthFlac = 0,
     recBuffers = [],
-	recBuffersL = [],
-	recBuffersR = [],
-	sampleRate=-1; //PB - opti
+    recBuffersL = [],
+    recBuffersR = [],
+    sampleRate=-1,
+    bufferSize,
+    targetSampleRate
+    resampler;
 
 global.isDebug = false;
 
@@ -63,7 +65,7 @@ global.onmessage = function(e) {
 	switch (e.data.cmd) {
 
 	case 'init':
-		global.initRec(e.data.config);
+		global.init(e.data.config);
 		encoderInstance.encoderInit();
 		break;
 	case 'encode':
@@ -84,7 +86,7 @@ global.onmessage = function(e) {
 	case 'record':
 
 		//buffer audio data
-		global.recordRec(e.data.buffer);
+		global.record(e.data.buffer);
 
 		//detect noise (= speech) and silence in audio:
 		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
@@ -107,16 +109,35 @@ global.onmessage = function(e) {
 
 };
 
-//Rec
-global.initRec = function(config){
+global.init = function(config){
+  resampler = null;
+  targetSampleRate = void(0);
   sampleRate = config.sampleRate;
-  global.isDebug = config.isDebug;
+  bufferSize = config.bufferSize;
+  global.setConfig(config);
 }
 
-global.recordRec = function(inputBuffer){
+global.setConfig = function(config){
+  if(typeof config.isDebug !== 'undefined'){
+    global.isDebug = config.isDebug;
+  }
+  if(typeof config.targetSampleRate !== 'undefined'){
+    targetSampleRate = config.targetSampleRate;
+    if(targetSampleRate !== sampleRate){
+      resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+    }
+  }
+}
+
+global.record = function(inputBuffer){
   recBuffersL.push(inputBuffer[0]);
   recBuffersR.push(inputBuffer[1]);
   recLength += inputBuffer[0].length;
+}
+
+/** resample sampleRate -> targetSampleRate, @see #setConfig */
+global.doResample = function(buffer){
+	return resampler? resampler.resample(buffer) : buffer;
 }
 
 global.getBuffers = function(id) {

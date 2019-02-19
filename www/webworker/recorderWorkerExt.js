@@ -40,8 +40,10 @@
 
 if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
   require('../silenceDetector.js');
+  require('../resampler.js');
 }  else {
   importScripts('silenceDetector.js');
+  importScripts('resampler.js');
 }
 
 ;(function(global){
@@ -49,7 +51,10 @@ if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
 var recLength = 0,
   recBuffersL = [],
   recBuffersR = [],
-  sampleRate;
+  sampleRate,
+  bufferSize,
+  targetSampleRate,
+  resampler;
 
 gobal.isDebug = false;
 
@@ -92,8 +97,23 @@ global.onmessage = function(e){
 };
 
 global.init = function(config){
+  resampler = null;
+  targetSampleRate = void(0);
   sampleRate = config.sampleRate;
-  global.isDebug = config.isDebug;
+  bufferSize = config.bufferSize;
+  global.setConfig(config);
+}
+
+global.setConfig = function(config){
+  if(typeof config.isDebug !== 'undefined'){
+    global.isDebug = config.isDebug;
+  }
+  if(typeof config.targetSampleRate !== 'undefined'){
+    targetSampleRate = config.targetSampleRate;
+    if(targetSampleRate !== sampleRate){
+      resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+    }
+  }
 }
 
 global.record = function(inputBuffer){
@@ -113,11 +133,29 @@ global.exportWAV = function(type){
 }
 
 global.exportMonoWAV = function(type){
+
   var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
-  var dataview = global.encodeWAV(bufferL, true);
+  var dataview = global.encodeWAV(global.doResample(bufferL), true);
+  // global.clear();
   var audioBlob = new Blob([dataview], { type: type });
 
   global.postMessage(audioBlob);
+}
+
+global.exportMonoPCM = function(type){
+	  var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+	  var channelBuffer = global.doResample(bufferL);
+	  // this.clear();
+	  var buffer = new ArrayBuffer(channelBuffer.length * 2);
+	  var view = new DataView(buffer);
+	  global.floatTo16BitPCM(view, 0, channelBuffer);
+
+	  this.postMessage(view);
+}
+
+/** resample sampleRate -> targetSampleRate, @see #setConfig */
+global.doResample = function(buffer){
+	return resampler? resampler.resample(buffer) : buffer;
 }
 
 /**

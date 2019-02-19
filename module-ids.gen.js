@@ -8,6 +8,7 @@ var _id = "mmir-plugin-encoder-core";
 var _paths = {
   "mmir-plugin-encoder-core/encoder": "www/encoder.js",
   "mmir-plugin-encoder-core/recorderExt": "www/recorderExt.js",
+  "mmir-plugin-encoder-core/resampler": "www/resampler.js",
   "mmir-plugin-encoder-core/silenceDetector": "www/silenceDetector.js",
   "mmir-plugin-encoder-core/webAudioInput": "www/webAudioInput.js",
   "mmir-plugin-encoder-core/workers/recorderWorkerExt": "www/webworker/recorderWorkerExt.js",
@@ -44,7 +45,7 @@ function _getAll(type, isResolve){
     });
   }
   this.dependencies.forEach(function(dep){
-    var depExports = require(dep + '/module-ids.gen.js');
+    var depExports = require(dep + '/module-ids.js');
     var depData = depExports.getAll(type, isResolve);
     if(isArray){
       _join(depData, result, dupl);

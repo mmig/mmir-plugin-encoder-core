@@ -77,7 +77,7 @@ define(function(){
 
         //backwards compatibility: use older createJavaScriptNode(), if new API function is not available
         var funcName = !this.context.createScriptProcessor? 'JavaScriptNode' : 'ScriptProcessor';
-        this.node = this.context['create'+funcName](bufferLen, 2, 2);
+        this.node = this.context['create'+funcName](bufferLen, 2, /*output channels TODO make configurable!*/ 2);
 
     	this.node.onaudioprocess = doRecordAudio;
 
@@ -85,6 +85,7 @@ define(function(){
         	cmd: 'init',
         	config: {
         		sampleRate: this.context.sampleRate,
+            bufferSize: bufferLen,
             isDebug: config.debug
         	}
         });

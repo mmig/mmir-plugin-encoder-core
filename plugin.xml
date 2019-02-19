@@ -36,6 +36,11 @@
         src="www/silenceDetector.js"
         target="mmirf/workers/silenceDetector.js" />
 
+    <!-- audio resampling utility (for use in WebWorker): -->
+    <asset
+        src="www/resampler.js"
+        target="mmirf/workers/resampler.js" />
+
     <!-- wrapper module for integrating encoder into the MMIR framework: -->
     <asset
         src="www/webAudioInput.js"
