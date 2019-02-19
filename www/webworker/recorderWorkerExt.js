@@ -56,7 +56,7 @@ var recLength = 0,
   targetSampleRate,
   resampler;
 
-gobal.isDebug = false;
+global.isDebug = false;
 
 global.onmessage = function(e){
   switch(e.data.cmd){
