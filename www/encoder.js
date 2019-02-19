@@ -6,9 +6,9 @@ var recLength = 0,
     recBuffersL = [],
     recBuffersR = [],
     sampleRate = -1,
-    eosDetected = false
+    eosDetected = false,
     bufferSize,
-    targetSampleRate
+    targetSampleRate,
     resampler;
 
 global.isDebug = false;
