@@ -8,8 +8,7 @@
   },
   "types": "index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "pluginexport"
+    "build": "createplugincompat ./ && pluginexport ./"
   },
   "repository": {
     "type": "git",
@@ -29,7 +28,18 @@
   "mmir": {
     "workers": [
       "./www/webworker"
-    ]
+    ],
+    "compat": {
+      "./www/webAudioInput.js": {
+        "file": "./www/alt/webAudioInputCompat.js",
+        "type": "media"
+      },
+      "./www/recorderExt.js": {
+        "file": "./www/alt/recorderExtCompat.js",
+        "type": "custom",
+        "exportedName": "Recorder"
+      }
+    }
   },
   "peerDependencies": {
     "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"

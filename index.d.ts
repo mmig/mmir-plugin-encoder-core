@@ -18,7 +18,7 @@ export interface ASREncoderOptions extends ASROptions {
 
 export type AudioStartedEventType = 'webaudioinputstarted';
 
-export interface MediaManagerWebInput extends MediaManager {
+export interface PluginMediaManager extends MediaManager {
   recognize: (options?: ASREncoderOptions, statusCallback?: ASROnStatus, failureCallback?: ASROnError, isIntermediateResults?: boolean) => void;
   startRecord: (options?: ASREncoderOptions, successCallback?: ASROnStatus, failureCallback?: ASROnError, intermediateResults?: boolean) => void;
   stopRecord: (options?: ASREncoderOptions, successCallback?: ASROnStatus, failureCallback?: ASROnError) => void;

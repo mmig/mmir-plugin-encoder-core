@@ -1,4 +1,6 @@
 
+import { MediaManagerPluginEntry } from 'mmir-lib';
+
 /**
  * (optional) entry "webAudioInput" in main configuration.json
  * for settings of WebAudioInput module.
@@ -8,21 +10,21 @@
  * {@link MediaManagerWebInput#recognize} or {@link MediaManagerWebInput#startRecord}
  * (if specified via the options, values will override configuration settings).
  */
-export interface WebAudioInputConfigEntry {
-  webAudioInput?: WebAudioInputConfig;
+export interface PluginConfig {
+  webAudioInput?: PluginConfigEntry;
 }
 
-export interface WebAudioInputConfig {
+export interface PluginConfigEntry extends MediaManagerPluginEntry {
 
   /** for (simple) end-of-speech detection */
-  silenceDetector?: SilenceDetectorConfig;
+  silenceDetector?: SilenceDetectorPluginConfigEntry;
 
     //NOT IMPLEMENTED/SUPPORTED, TODO?
     // /** @example  "2000000" */
     // silenceBuffer?: number|string;
 }
 
-export interface SilenceDetectorConfig {
+export interface SilenceDetectorPluginConfigEntry {
   /**
    * @type float of interval [0, 1], or stringified float
    * @default 0.1
@@ -77,7 +79,7 @@ export type WebAudioInputNameType = 'mmir-plugin-encoder-core';
 
 export type WebAudioInputImplType = ASRGoogleXHRImplType | ASRNuanceXHRImplType | ASRNuanceWSImplType;
 
-export interface MediaManagerConfigWebAudioInputEntry {
+export interface MediaManagerConfigWebAudioInputEntry extends MediaManagerPluginEntry {
   mod: WebAudioInputNameType;
   config?: WebAudioInputImplType | string;
   ctx?: string;
