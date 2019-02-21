@@ -26,9 +26,9 @@
 
 
 define(
-	['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/constants', 'mmirf/logger', 'module'],//, 'mmirf/languageManager'],
+	['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/constants', 'mmirf/logger', 'require', 'module'],//, 'mmirf/languageManager'],
 	function(
-		mediaManager, config, consts, Logger, mod//, lang
+		mediaManager, config, consts, Logger, require, mod//, lang
 ){
 
 return {
