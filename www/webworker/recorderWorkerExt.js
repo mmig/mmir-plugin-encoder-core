@@ -51,7 +51,8 @@ if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
 var recLength = 0,
   recBuffersL = [],
   recBuffersR = [],
-  sampleRate,
+  sampleRate = -1,
+  eosDetected = false,
   bufferSize,
   targetSampleRate,
   resampler;
@@ -72,11 +73,34 @@ global.onmessage = function(e){
     //MODIFICATIONs russa:
 	case 'record':
 
+    if(eosDetected){
+      eosDetected = false;
+      //-> EOS detected: first add last few cached audio-buffers, before recording the new one
+      var tmpBuffer = SilenceDetector.loadBuffer();
+      if(e.data.buffer.length === 2){
+
+        if(tmpBuffer && tmpBuffer.length > 0){
+          for(i=0; i < tmpBuffer.length; i++){
+            var _recBuffer = new Array(2);
+            _recBuffer[0] = tmpBuffer[i];
+            _recBuffer[1] = tmpBuffer[i];
+            global.record(_recBuffer);
+          }
+        }
+
+      } else {
+        for(i=0; i < tmpBuffer.length; i++){
+          global.record(tmpBuffer[i]);
+        }
+      }
+    }
+
 		//buffer audio data
 		global.record(e.data.buffer);
 
 		//detect noise (= speech) and silence in audio:
-		SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
+		eosDetected = SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0] : e.data.buffer);
+		self.postMessage({cmd: 'fireChunkStored'});
 
 		break;
 	case 'getBuffers':
