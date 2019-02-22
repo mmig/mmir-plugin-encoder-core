@@ -94,7 +94,7 @@
 
 
 	
-	return function initialize(){
+	return {initialize: function (){
 	  var origArgs = arguments;
 	  require(['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/constants', 'mmirf/logger', 'require', 'module'], function (mediaManager, config, consts, Logger, require, mod){
     var origInit = (function(){
@@ -1153,9 +1153,9 @@ return {
 
 }
     })();
-    origInit.apply(null, origArgs);
+    origInit.initialize.apply(null, origArgs);
 });;
-	};
+	}};
 
 
 	//END define
