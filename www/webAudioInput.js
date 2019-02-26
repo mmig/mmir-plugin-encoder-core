@@ -42,7 +42,7 @@ return {
 		 * Default implementation for WebAudioInput: Google Recognition Web Service v1
 		 * @memberOf Html5AudioInput#
 		 */
-		var _defaultImplFile = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-plugin-asr-google-xhr.js' : 'webasrGoogleImpl.js';
+		var _defaultImplFile = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-plugin-asr-google-xhr.js' : 'asrGoogleXhr.js';
 
 		/**
 		 * Map for codec names to implementation files
@@ -77,9 +77,9 @@ return {
 		 * @memberOf Html5AudioInput#
 		 */
 		var _defaultWorkerImpl = {
-			'webasrgoogleimpl.js':   _workerImpl.flac,
-			'webasrnuancewsimpl.js':   _workerImpl.speex,
-			'webasrnuanceimpl.js':   _workerImpl.amr,
+			'asrgooglexhr.js':   _workerImpl.flac,
+			'asrnuancews.js':   _workerImpl.speex,
+			'asrnuancexhr.js':   _workerImpl.amr,
 
 			'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
 			'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
