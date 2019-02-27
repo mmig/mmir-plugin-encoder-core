@@ -28,7 +28,12 @@ module.exports = {
          * @default 0.1
          */
         "noiseTreshold"
-      ]
+      ],
+      defaultValues: {
+        resetCount: 15,
+        pauseCount: 3,
+        noiseTreshold: 0.1
+      }
     }
   },
   /**
