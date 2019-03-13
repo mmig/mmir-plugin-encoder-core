@@ -274,7 +274,7 @@
 
 
     	if(e.data instanceof DataView){
-        console.error('received DataView from worker');//FIXME DEBUG
+    		if(config.isDebug) console.info('received DataView from worker');
     		currCallback(e.data);
     		return;
     	}
