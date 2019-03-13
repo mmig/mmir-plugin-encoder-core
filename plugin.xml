@@ -19,6 +19,10 @@
         <engine name="cordova" version=">=5.0" />
     </engines>
 
+    <!-- MMIR_PLUGIN_MODE: "normal" | "compat" | "webpack" -->
+    <preference name="MMIR_PLUGIN_MODE" default="normal" />
+    <hook src="res/js/before_plugin_install_hook.js" type="before_plugin_install" />
+
     <!-- basic WebWorker recorder (for recording PCM/WAV): -->
     <asset
         src="www/webworker/recorderWorkerExt.js"
