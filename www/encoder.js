@@ -89,11 +89,11 @@ global.onmessage = function(e) {
     if(eosDetected){
       eosDetected = false;
       var tmpBuffer = SilenceDetector.loadBuffer();
-      console.warn("encoder onmessage record loadBuffers");//FIXME DEBUG
+      if(global.isDebug) console.info("encoder onmessage record loadBuffers");//FIXME DEBUG
       if(e.data.buffer.length === 2){
 
         if(tmpBuffer && tmpBuffer.length > 0){
-          console.log("tmpBuffer1: ", tmpBuffer);//FIXME DEBUG
+          if(global.isDebug) console.log("tmpBuffer1: ", tmpBuffer);//FIXME DEBUG
           for(i=0; i < tmpBuffer.length; i++){
             var _recBuffer = new Array(2);
             _recBuffer[0] = tmpBuffer[i];
@@ -103,7 +103,7 @@ global.onmessage = function(e) {
         }
 
       } else {
-        console.log("tmpBuffer2: ", tmpBuffer);//FIXME DEBUG
+        if(global.isDebug) console.log("tmpBuffer2: ", tmpBuffer);//FIXME DEBUG
         for(i=0; i < tmpBuffer.length; i++){
           global.record(tmpBuffer[i]);
         }
@@ -115,7 +115,7 @@ global.onmessage = function(e) {
 
 		//detect noise (= speech) and silence in audio:
 		eosDetected = SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
-		console.log("eosDetected: " + eosDetected);//FIXME DEBUG
+		if(global.isDebug) console.log("eosDetected: " + eosDetected);//FIXME DEBUG
 		self.postMessage({cmd: 'fireChunkStored'});
 
 		break;
