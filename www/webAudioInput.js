@@ -170,7 +170,7 @@ return {
 			 * @protected
     		 * @memberOf Html5AudioInput.AudioProcessor#
     		 */
-	      	_init: function(stopUserMediaFunc){
+	      	_init: function(_stopUserMediaFunc){
 
 	      		//NOTE _init may get called before audioProcessor impl. is loaded
 	      		//     -> cache these invocation and apply them later, when audioProcessor is loaded
@@ -505,8 +505,11 @@ return {
     		 * @memberOf Html5AudioInput#
     		 */
     		function onStartUserMedia(inputstream, callback){
-    			var buffer = 0;
     			stream = inputstream;
+					if(audio_context){
+						audio_context.close();
+					}
+					audio_context = createAudioContext();
     			var input = audio_context.createMediaStreamSource(stream);
 
     			if(mediaManager.micLevelsAnalysis.enabled()){
@@ -646,16 +649,10 @@ return {
 
     		try {
 		        // unify the different kinds of HTML5 implementations
-    			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    			navigator.__getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
     			//window.AudioContext = window.AudioContext || window.webkitAudioContext;
 //		    	audio_context = new AudioContext;
-
-    			if(typeof AudioContext !== 'undefined'){
-    				audio_context = new AudioContext;
-    			}
-    			else {//if(typeof webkitAudioContext !== 'undefined'){
-    				audio_context = new webkitAudioContext;
-    			}
+					nonFunctional = !(AudioContext || webkitAudioContext);
     		}
     		catch (e) {
     			_logger.error('No web audio support in this browser! Error: '+(e.stack? e.stack : e));
@@ -677,6 +674,23 @@ return {
     			return {};///////////////////////////// EARLY EXIT //////////////////////////////
     		}
 
+  		/**
+  		 * creates a new AudioContext
+  		 *
+  		 * NOTE should be only invoked after some user interaction, otherwise
+  		 *      the browser/execution environment might refuse to create an AudioContext
+  		 *
+  		 * @memberOf Html5AudioInput#
+  		 */
+				var createAudioContext = function(){
+    			if(typeof AudioContext !== 'undefined'){
+    				return new AudioContext;
+    			}
+    			else {//if(typeof webkitAudioContext !== 'undefined'){
+    				return new webkitAudioContext;
+    			}
+				}
+
     		/**
     		 * get audioInputStream, i.e. open microphone
     		 *
@@ -689,7 +703,7 @@ return {
 
     			var onStarted = callback? function(stream){ onStartUserMedia.call(this, stream, callback); } : onStartUserMedia;
 
-    			navigator.getUserMedia({audio: true}, onStarted, function onError(e) {
+    			navigator.__getUserMedia({audio: true}, onStarted, function onError(e) {
 						_logger.error('Could not access microphone: '+e);
 						if (currentFailureCallback)
 		  					 currentFailureCallback(e);
@@ -1060,7 +1074,7 @@ return {
 		};
 
 		var handleError = function(err){
-			console.error('ERROR: failed to initialize webAudioInnput with module "'+implFile+'": '+err, err);
+			(_logger || console).error('ERROR: failed to initialize webAudioInnput with module "'+implFile+'": '+err, err);
 			//invoke callback without exporting functions:
 			callBack({});
 		};
