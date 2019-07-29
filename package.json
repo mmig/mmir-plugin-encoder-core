@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab-cos.b.dfki.de/mmir/mmir-plugin-encoder-core.git"
+    "url": "https://github.com/mmig/mmir-plugin-encoder-core.git"
   },
   "keywords": [
     "audio",
@@ -42,9 +42,9 @@
     }
   },
   "peerDependencies": {
-    "mmir-lib": "git+https://gitlab-cos.b.dfki.de/mmir/dev_mmir-lib.git#develop/webpack"
+    "mmir-lib": "git+https://github.com/mmig/mmir-lib.git"
   },
   "devDependencies": {
-    "mmir-plugin-exports": "git+https://gitlab-cos.b.dfki.de/mmir/mmir-plugin-exports.git"
+    "mmir-plugin-exports": "git+https://github.com/mmig/mmir-plugin-exports.git"
   }
 }
