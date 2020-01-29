@@ -30,6 +30,8 @@ export interface PluginMediaManager extends MediaManager {
   off: (eventName: AudioStartedEventType | MediaEventType, eventHandler: MediaEventHandler) => boolean;
   on: (eventName: AudioStartedEventType | MediaEventType, eventHandler: MediaEventHandler) => void;
 
+  _emitEvent: (eventName: AudioStartedEventType | MediaEventType, ...args: any[]) => void;
+  /** @deprecated use [[_emitEvent]] instead */
   _fireEvent: (eventName: AudioStartedEventType | MediaEventType, args: any[]) => void;
 
   _addListenerObserver: (eventName: AudioStartedEventType | MediaEventType, observerCallback: (actionType: "added" | "removed", eventHandler: MediaEventHandler) => void) => void;
