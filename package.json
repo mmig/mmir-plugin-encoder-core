@@ -42,7 +42,7 @@
     }
   },
   "devDependencies": {
-    "mmir-lib": "git+https://github.com/mmig/mmir-lib.git",
-    "mmir-plugin-exports": "git+https://github.com/mmig/mmir-plugin-exports.git"
+    "mmir-lib": ">=5",
+    "mmir-plugin-exports": "^1.3"
   }
 }
