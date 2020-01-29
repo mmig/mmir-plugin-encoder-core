@@ -2,48 +2,48 @@
 /////////////////////////////////////////////////////////////////
 
 /*
- * 	Copyright (C) 2012-2016 DFKI GmbH
- * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
- * 	German Research Center for Artificial Intelligence
- * 	http://www.dfki.de
+ *	Copyright (C) 2012-2016 DFKI GmbH
+ *	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
+ *	German Research Center for Artificial Intelligence
+ *	http://www.dfki.de
  *
- * 	Permission is hereby granted, free of charge, to any person obtaining a
- * 	copy of this software and associated documentation files (the
- * 	"Software"), to deal in the Software without restriction, including
- * 	without limitation the rights to use, copy, modify, merge, publish,
- * 	distribute, sublicense, and/or sell copies of the Software, and to
- * 	permit persons to whom the Software is furnished to do so, subject to
- * 	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person obtaining a
+ *	copy of this software and associated documentation files (the
+ *	"Software"), to deal in the Software without restriction, including
+ *	without limitation the rights to use, copy, modify, merge, publish,
+ *	distribute, sublicense, and/or sell copies of the Software, and to
+ *	permit persons to whom the Software is furnished to do so, subject to
+ *	the following conditions:
  *
- * 	The above copyright notice and this permission notice shall be included
- * 	in all copies or substantial portions of the Software.
+ *	The above copyright notice and this permission notice shall be included
+ *	in all copies or substantial portions of the Software.
  *
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ *	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ *	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ *	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ *	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 var SilenceDetector = (function(threadRef){
 
 /**
  * Counter:
- * 	how many silent blobs have there currently been in a row now?
+ *	how many silent blobs have there currently been in a row now?
  * @memberOf SilenceDetector.prototype
  */
 var silenceCount = 0;
 /**
  * Counter:
- * 	how many blobs have been currently loud in a row now?
+ *	how many blobs have been currently loud in a row now?
  * @memberOf SilenceDetector.prototype
  */
 var speechCount = 0;
 /**
  * Counter:
- * 	how long has there been no loud enough input (in a row), up to now?
+ *	how long has there been no loud enough input (in a row), up to now?
  * @memberOf SilenceDetector.prototype
  */
 var lastInput = 0;
@@ -71,7 +71,7 @@ var blobNumber = 0;
 /** @memberOf SilenceDetector.prototype */
 var tmpBuffer = [];
 /** @memberOf SilenceDetector.prototype */
-var tmpBufferSize = 3; //Max tmpBufferSize  TODO make configurable?
+var tmpBufferSize = 3; //Max tmpBufferSize	TODO make configurable?
 
 //events:
 /**
@@ -144,7 +144,7 @@ var CLEAR = 'clear';
  * sets the config and echos back
  *
  * @param {PlainObject} config
- * 			configuration settings with properties
+ *			configuration settings with properties
  * @param {Integer} config.sampleRate
 						audio sampling rate
  * @param {Integer} config.noiseThreshold
@@ -160,31 +160,31 @@ var CLEAR = 'clear';
  * @memberOf SilenceDetector.prototype
  */
 function _initDetection(config){
-  if (config.sampleRate){
-	  sampleRate = config.sampleRate;
-	  if(typeof sampleRate !== 'number'){
-		  sampleRate = parseInt(sampleRate, 10);
-	  }
-  }
-  if (config.noiseTreshold){
-	  noiseTreshold = config.noiseTreshold;
-	  if(typeof noiseTreshold !== 'number'){
-		  noiseTreshold = parseFloat(noiseTreshold);
-	  }
-  }
-  if (config.pauseCount){
-	  pauseCount = config.pauseCount;
-	  if(typeof pauseCount !== 'number'){
-		  pauseCount = parseInt(pauseCount, 10);
-	  }
-  }
-  if (config.resetCount){
-	  resetCount = config.resetCount;
-	  if(typeof resetCount !== 'number'){
-		  resetCount = parseInt(resetCount, 10);
-	  }
-  }
-  _sendMessage(INITIALIZED);
+	if (config.sampleRate){
+		sampleRate = config.sampleRate;
+		if(typeof sampleRate !== 'number'){
+			sampleRate = parseInt(sampleRate, 10);
+		}
+	}
+	if (config.noiseTreshold){
+		noiseTreshold = config.noiseTreshold;
+		if(typeof noiseTreshold !== 'number'){
+			noiseTreshold = parseFloat(noiseTreshold);
+		}
+	}
+	if (config.pauseCount){
+		pauseCount = config.pauseCount;
+		if(typeof pauseCount !== 'number'){
+			pauseCount = parseInt(pauseCount, 10);
+		}
+	}
+	if (config.resetCount){
+		resetCount = config.resetCount;
+		if(typeof resetCount !== 'number'){
+			resetCount = parseInt(resetCount, 10);
+		}
+	}
+	_sendMessage(INITIALIZED);
 }
 
 /**
@@ -192,7 +192,7 @@ function _initDetection(config){
  * if #tempBuffer would exceed #tmpBufferSize, removes the oldest entry
  * before pushing the new inputBuffer.
  *
- * @param       {TypedArray} inputBuffer the current audio input buffer
+ * @param				{TypedArray} inputBuffer the current audio input buffer
  */
 function _saveBuffer(inputBuffer){
 	if(tmpBuffer.length >= tmpBufferSize){
@@ -203,7 +203,7 @@ function _saveBuffer(inputBuffer){
 
 /**
  * returns current temporary buffer & clears temporary buffer
- * @return      {Array<TypedArray>} the last n-buffered input-buffers
+ * @return			{Array<TypedArray>} the last n-buffered input-buffers
  */
 function _loadBuffer(){
 	var ret = tmpBuffer;
@@ -225,38 +225,38 @@ function _loadBuffer(){
  * Overview for detection-states & fired events, after detection was {@link .start}ed:
  * <pre>
  *
- *        fire: CLEAR                    fire: SILENCE
- *              ^                              ^
- *              |                              |
- * [no "loud" and "silent" > resetCount]       |
- *              |                              |
- *        |------------|                       |              |------------|
- *        |            |  <-["silent" blobs > silenceCount]-  |            |
- *        |   silent   |                                      |    noisy   |
- *        |            |  ---["loud" blobs > speechCount]-->  |            |
- *        |------------|                                      |------------|
- *             |                                                     |
- *  [blob count > maxBlobSize]                          [blob count > maxBlobSize]
- *             |                                                     |
- *             v                                                     v
- *    fire: SEND_PARTIAL                                    fire: SEND_PARTIAL
+ *				fire: CLEAR										 fire: SILENCE
+ *							^															 ^
+ *							|															 |
+ * [no "loud" and "silent" > resetCount]			 |
+ *							|															 |
+ *				|------------|											 |							|------------|
+ *				|						 |	<-["silent" blobs > silenceCount]-	|						 |
+ *				|		silent	 |																			|		 noisy	 |
+ *				|						 |	---["loud" blobs > speechCount]-->	|						 |
+ *				|------------|																			|------------|
+ *						 |																										 |
+ *	[blob count > maxBlobSize]													[blob count > maxBlobSize]
+ *						 |																										 |
+ *						 v																										 v
+ *		fire: SEND_PARTIAL																		fire: SEND_PARTIAL
  *
  * </pre>
  * (in addition, {@link #event:SilenceDetectionStarted} is fired, after {@link .start}ed and processing the first N blobs)
  *
  *
  * @param {Blob} inputBuffer
- * 			the audio Blob
+ *			the audio Blob
  * @returns {Boolean} <code>true</code> if silence (after speech/loud part) was detected, i.e. when message #SILENCE was posted
  *
  * @private
  * @memberOf SilenceDetector.prototype
  */
 function _isSilent(inputBuffer){
-  var longSilence = false;
+	var longSilence = false;
 	if (recording){
 		++blobNumber;
-    _saveBuffer(inputBuffer);
+		_saveBuffer(inputBuffer);
 		if (blobNumber === 3){
 			//at the very start (i.e. after 3 blobs): signal "started"
 			_sendMessage(AUDIO_STARTED);
@@ -274,7 +274,7 @@ function _isSilent(inputBuffer){
 		}
 		if (thisSilent){
 			if (silenceCount >= pauseCount){
-        longSilence = true;
+				longSilence = true;
 				_sendMessage(SILENCE);
 				speechCount = 0;
 				silenceCount = 0;
@@ -312,7 +312,7 @@ function _isSilent(inputBuffer){
 			lastInput = 0;
 		}
 	}
-  return longSilence;
+	return longSilence;
 }
 
 /**
@@ -367,49 +367,49 @@ function _sendMessage(msg){
 
 /**
  * @param {String} cmd
- * 			one of "initDetection" | "start" | "isSilent" | "stop"
+ *			one of "initDetection" | "start" | "isSilent" | "stop"
  * @param {PlainObject} [config]
- * 			SHOULD be provided if cmd is "initDetection"
- * 			see #_initDetection
+ *			SHOULD be provided if cmd is "initDetection"
+ *			see #_initDetection
  * @param {Buffer} [buffer]
- * 			MUST be provided if cmd is "isSilent"
- * 			see #_isSilent
+ *			MUST be provided if cmd is "isSilent"
+ *			see #_isSilent
  *
  * @private
  * @memberOf SilenceDetector.prototype
  */
 function _processesCommand(cmd, config, buffer){
 	switch(cmd){
-	  case 'initDetection':
-	    _initDetection(config);
-	    break;
-	  case 'start':
-	    _start();
-	    break;
-	  case 'isSilent':
-	    _isSilent(buffer);
-	    break;
-	  case 'stop':
-	    _stop();
-	    break;
-	  default:
-		  console.error('SilenceDetector: unknown command "'+cmd+'"');
+		case 'initDetection':
+			_initDetection(config);
+			break;
+		case 'start':
+			_start();
+			break;
+		case 'isSilent':
+			_isSilent(buffer);
+			break;
+		case 'stop':
+			_stop();
+			break;
+		default:
+			console.error('SilenceDetector: unknown command "'+cmd+'"');
 	}
-};
+}
 
 /**
  * @class SilenceDetector
  */
 var silenceDetector = {
-  /**
-   * @copydoc #_loadBuffer
-   * @public
-   * @memberOf SilenceDetector
-   */
-  'loadBuffer': function(){
+	/**
+	 * @copydoc #_loadBuffer
+	 * @public
+	 * @memberOf SilenceDetector
+	 */
+	'loadBuffer': function(){
 		return _loadBuffer();
 	},
-  /**
+	/**
 	 * @copydoc #_initDetection
 	 * @public
 	 * @memberOf SilenceDetector
@@ -445,12 +445,12 @@ var silenceDetector = {
 	 * Executes one of the functions.
 	 *
 	 * @param {String} cmd
-	 * 				command/function name that should be executed, one of
-	 * 				<code>"initDetection" | "start" | "isSilent" | "stop"</code>
+	 *				command/function name that should be executed, one of
+	 *				<code>"initDetection" | "start" | "isSilent" | "stop"</code>
 	 * @param {Object} [eventData.config] OPTIONAL
-	 * 				the configuration options, if <code>cmd</code> is "initDetection", see {@link #_initDetection}
+	 *				the configuration options, if <code>cmd</code> is "initDetection", see {@link #_initDetection}
 	 * @param {Blob} [eventData.Buffer] OPTIONAL
-	 * 				the audio data, if <code>cmd</code> is "isSilent", see {@link #_isSilent}
+	 *				the audio data, if <code>cmd</code> is "isSilent", see {@link #_isSilent}
 	 *
 	 * @memberOf SilenceDetector
 	 */

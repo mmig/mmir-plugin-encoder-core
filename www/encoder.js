@@ -2,49 +2,49 @@
 ;(function(global){
 
 var recLength = 0,
-    recBuffers = [],
-    recBuffersL = [],
-    recBuffersR = [],
-    sampleRate = -1,
-    eosDetected = false,
-    bufferSize,
-    targetSampleRate,
-    resampler;
+		recBuffers = [],
+		recBuffersL = [],
+		recBuffersR = [],
+		sampleRate = -1,
+		eosDetected = false,
+		bufferSize,
+		targetSampleRate,
+		resampler;
 
 global.isDebug = false;
 
 global.exportForASR = function(recBuffers, recLength){
 
-    //get raw-data length:
-    var totalBufferSize = recLength;
+		//get raw-data length:
+		var totalBufferSize = recLength;
 
-    //reset current buffers size
-    recLength = 0;
+		//reset current buffers size
+		recLength = 0;
 
-    //get & reset current buffer content
-    var buffers = recBuffers.splice(0, recBuffers.length);
+		//get & reset current buffer content
+		var buffers = recBuffers.splice(0, recBuffers.length);
 
-    //convert buffers into one single buffer
-    var samples = global.mergeBuffersUint( buffers, totalBufferSize);
-    var the_blob = new Blob([samples]);
+		//convert buffers into one single buffer
+		var samples = global.mergeBuffersUint( buffers, totalBufferSize);
+		var the_blob = new Blob([samples]);
 
-    return the_blob;
-    // return samples;
+		return the_blob;
+		// return samples;
 }
 
 
 global.record = function(inputBuffer){
-	  recBuffers.push(inputBuffer);
-	  recLength += inputBuffer.length;
-	  if(global.isDebug) console.log("encoder RECORD called!");
+		recBuffers.push(inputBuffer);
+		recLength += inputBuffer.length;
+		if(global.isDebug) console.log("encoder RECORD called!");
 	}
 
 global.getMergedBufferLength = function(bufferList){
-	  var i=0, size = bufferList.length, total=0;
-	  for(;i < size; ++i){
-		  total += bufferList[i].length;
-	  }
-	  return total;
+		var i=0, size = bufferList.length, total=0;
+		for(;i < size; ++i){
+			total += bufferList[i].length;
+		}
+		return total;
 }
 
 global.mergeBuffersUint = function(channelBuffer, recordingLength){
@@ -53,9 +53,9 @@ global.mergeBuffersUint = function(channelBuffer, recordingLength){
 	var offset = 0;
 	var lng = channelBuffer.length;
 	for (var i = 0; i < lng; i++){
-	  var buffer = channelBuffer[i];
-	  result.set(buffer, offset);
-	  offset += buffer.length;
+		var buffer = channelBuffer[i];
+		result.set(buffer, offset);
+		offset += buffer.length;
 	}
 	//if(global.isDebug) console.log("encoder MERGE called!");
 	return result;
@@ -86,29 +86,29 @@ global.onmessage = function(e) {
 //		from RecWorkExt
 	case 'record':
 
-    if(eosDetected){
-      eosDetected = false;
-      var tmpBuffer = SilenceDetector.loadBuffer();
-      if(global.isDebug) console.info("encoder onmessage record loadBuffers");//FIXME DEBUG
-      if(e.data.buffer.length === 2){
+		if(eosDetected){
+			eosDetected = false;
+			var tmpBuffer = SilenceDetector.loadBuffer();
+			if(global.isDebug) console.info("encoder onmessage record loadBuffers");//FIXME DEBUG
+			if(e.data.buffer.length === 2){
 
-        if(tmpBuffer && tmpBuffer.length > 0){
-          if(global.isDebug) console.log("tmpBuffer1: ", tmpBuffer);//FIXME DEBUG
-          for(i=0; i < tmpBuffer.length; i++){
-            var _recBuffer = new Array(2);
-            _recBuffer[0] = tmpBuffer[i];
-            _recBuffer[1] = tmpBuffer[i];
-            global.record(_recBuffer);
-          }
-        }
+				if(tmpBuffer && tmpBuffer.length > 0){
+					if(global.isDebug) console.log("tmpBuffer1: ", tmpBuffer);//FIXME DEBUG
+					for(i=0; i < tmpBuffer.length; i++){
+						var _recBuffer = new Array(2);
+						_recBuffer[0] = tmpBuffer[i];
+						_recBuffer[1] = tmpBuffer[i];
+						global.record(_recBuffer);
+					}
+				}
 
-      } else {
-        if(global.isDebug) console.log("tmpBuffer2: ", tmpBuffer);//FIXME DEBUG
-        for(i=0; i < tmpBuffer.length; i++){
-          global.record(tmpBuffer[i]);
-        }
-      }
-    }
+			} else {
+				if(global.isDebug) console.log("tmpBuffer2: ", tmpBuffer);//FIXME DEBUG
+				for(i=0; i < tmpBuffer.length; i++){
+					global.record(tmpBuffer[i]);
+				}
+			}
+		}
 
 		//buffer audio data
 		global.record(e.data.buffer);
@@ -137,29 +137,29 @@ global.onmessage = function(e) {
 };
 
 global.init = function(config){
-  resampler = null;
-  targetSampleRate = void(0);
-  sampleRate = config.sampleRate;
-  bufferSize = config.bufferSize;
-  global.setConfig(config);
+	resampler = null;
+	targetSampleRate = void(0);
+	sampleRate = config.sampleRate;
+	bufferSize = config.bufferSize;
+	global.setConfig(config);
 }
 
 global.setConfig = function(config){
-  if(typeof config.isDebug !== 'undefined'){
-    global.isDebug = config.isDebug;
-  }
-  if(typeof config.targetSampleRate !== 'undefined'){
-    targetSampleRate = config.targetSampleRate;
-    if(targetSampleRate !== sampleRate){
-      resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
-    }
-  }
+	if(typeof config.isDebug !== 'undefined'){
+		global.isDebug = config.isDebug;
+	}
+	if(typeof config.targetSampleRate !== 'undefined'){
+		targetSampleRate = config.targetSampleRate;
+		if(targetSampleRate !== sampleRate){
+			resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+		}
+	}
 }
 
 global.record = function(inputBuffer){
-  recBuffersL.push(inputBuffer[0]);
-  recBuffersR.push(inputBuffer[1]);
-  recLength += inputBuffer[0].length;
+	recBuffersL.push(inputBuffer[0]);
+	recBuffersR.push(inputBuffer[1]);
+	recLength += inputBuffer[0].length;
 }
 
 /** resample sampleRate -> targetSampleRate, @see #setConfig */
@@ -169,16 +169,16 @@ global.doResample = function(buffer){
 
 global.getBuffers = function(id) {
 
-  var buffers = [];
-  buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
-  buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
+	var buffers = [];
+	buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
+	buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
 
-  if(typeof id !== 'undefined'){
-    global.postMessage({buffers: buffers, id: id, size: recLength});
-  } else {
-    buffers.size = recLength;
-    global.postMessage(buffers);
-  }
+	if(typeof id !== 'undefined'){
+		global.postMessage({buffers: buffers, id: id, size: recLength});
+	} else {
+		buffers.size = recLength;
+		global.postMessage(buffers);
+	}
 
 }
 
@@ -192,21 +192,21 @@ global.getBuffersFor = function(id) {
 }
 
 global.clear = function(){
-  if(global.isDebug) console.debug('clear REC '+recLength);
-  recLength = 0;
-  recBuffersL = [];
-  recBuffersR = [];
+	if(global.isDebug) console.debug('clear REC '+recLength);
+	recLength = 0;
+	recBuffersL = [];
+	recBuffersR = [];
 }
 
 
 global.mergeBuffersFloat = function(recBuffers, recLength){
-  var result = new Float32Array(recLength);
-  var offset = 0;
-  for (var i = 0; i < recBuffers.length; i++){
-    result.set(recBuffers[i], offset);
-    offset += recBuffers[i].length;
-  }
-  return result;
+	var result = new Float32Array(recLength);
+	var offset = 0;
+	for (var i = 0; i < recBuffers.length; i++){
+		result.set(recBuffers[i], offset);
+		offset += recBuffers[i].length;
+	}
+	return result;
 }
 
 })(typeof window !== 'undefined'? window : typeof self !== 'undefined'? self : typeof global !== 'undefined'? global : this);
