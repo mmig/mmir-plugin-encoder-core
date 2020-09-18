@@ -258,13 +258,13 @@ global.encodeWAV = function(samples, mono){
   var length = samples.length * bytesPerSample;
 
   /* RIFF identifier */
-  writeString(view, 0, 'RIFF');
+  this.writeString(view, 0, 'RIFF');
   /* file length */
   view.setUint32(4, 32 + length, true);
   /* RIFF type */
-  writeString(view, 8, 'WAVE');
+  this.writeString(view, 8, 'WAVE');
   /* format chunk identifier */
-  writeString(view, 12, 'fmt ');
+  this.writeString(view, 12, 'fmt ');
   /* format chunk length */
   view.setUint32(16, 16, true);
   /* sample format (raw) */
@@ -280,11 +280,11 @@ global.encodeWAV = function(samples, mono){
   /* bits per sample */
   view.setUint16(34, bitsPerSample, true);
   /* data chunk identifier */
-  writeString(view, 36, 'data');
+  this.writeString(view, 36, 'data');
   /* data chunk length */
   view.setUint32(40, length, true);
 
-  floatTo16BitPCM(view, 44, samples);
+  this.floatTo16BitPCM(view, 44, samples);
 
   return view;
 }
