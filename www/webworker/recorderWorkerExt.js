@@ -146,6 +146,12 @@ global.record = function(inputBuffer){
   recLength += inputBuffer[0].length;
 }
 
+global.calcLength = function(recBuffers){
+	var len = 0;
+	for(var i=recBuffers.length - 1; i >= 0; --i) len += recBuffers[i].length;
+	return len;
+}
+
 global.exportWAV = function(type){
   var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
   var bufferR = global.mergeBuffersFloat(recBuffersR, recLength);
