@@ -61,26 +61,27 @@ global.mergeBuffersUint = function(channelBuffer, recordingLength){
 	return result;
 }
 
+var encoder = global.encoderInstance;
 global.onmessage = function(e) {
 
 	switch (e.data.cmd) {
 
 	case 'init':
 		global.init(e.data.config);
-		encoderInstance.encoderInit();
+		encoder.encoderInit();
 		break;
 	case 'encode':
 		if(global.isDebug) console.debug('encode '+recLength);
 		var buffMerged = global.mergeBuffersFloat(recBuffersL, recLength);
-		encoderInstance.encodeBuffer(buffMerged);
+		encoder.encodeBuffer(buffMerged);
 		global.clear();
 		break;
 	case 'encClose':
 		if(global.isDebug) console.log("encoder finish: ");
-		encoderInstance.encoderFinish();
-		if(global.isDebug) console.log("encodedExt: "+encoderInstance.encoded.length);
-		var data = new Blob([encoderInstance.encoded]);
-		encoderInstance.encoderCleanUp();
+		encoder.encoderFinish();
+		if(global.isDebug) console.log("encodedExt: "+encoder.encoded.length);
+		var data = new Blob([encoder.encoded]);
+		encoder.encoderCleanUp();
 		global.postMessage({cmd: 'encFinished', buf: data});
 		break;
 //		from RecWorkExt
