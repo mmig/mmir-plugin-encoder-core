@@ -17,61 +17,61 @@
 
 
 if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
-  require('../silenceDetector.js');
-  require('../resampler.js');
-}  else {
-  importScripts('silenceDetector.js');
-  importScripts('resampler.js');
+	require('../silenceDetector.js');
+	require('../resampler.js');
+}	else {
+	importScripts('silenceDetector.js');
+	importScripts('resampler.js');
 }
 
 ;(function(global){
 
 var recLength = 0,
-  recBuffersL = [],
-  recBuffersR = [],
-  sampleRate = -1,
-  eosDetected = false,
-  bufferSize,
-  targetSampleRate,
-  resampler;
+	recBuffersL = [],
+	recBuffersR = [],
+	sampleRate = -1,
+	eosDetected = false,
+	bufferSize,
+	targetSampleRate,
+	resampler;
 
 global.isDebug = false;
 
 global.onmessage = function(e){
-  switch(e.data.cmd){
-    case 'init':
-      global.init(e.data.config);
-      break;
-    case 'exportWAV':
-      global.exportWAV(e.data.type);
-      break;
-    case 'exportMonoWAV':
-      global.exportMonoWAV(e.data.type);
-      break;
-    //MODIFICATIONs russa:
+	switch(e.data.cmd){
+		case 'init':
+			global.init(e.data.config);
+			break;
+		case 'exportWAV':
+			global.exportWAV(e.data.type);
+			break;
+		case 'exportMonoWAV':
+			global.exportMonoWAV(e.data.type);
+			break;
+		//MODIFICATIONs russa:
 	case 'record':
 
-    if(eosDetected){
-      eosDetected = false;
-      //-> EOS detected: first add last few cached audio-buffers, before recording the new one
-      var tmpBuffer = SilenceDetector.loadBuffer();
-      if(e.data.buffer.length === 2){
+		if(eosDetected){
+			eosDetected = false;
+			//-> EOS detected: first add last few cached audio-buffers, before recording the new one
+			var tmpBuffer = SilenceDetector.loadBuffer();
+			if(e.data.buffer.length === 2){
 
-        if(tmpBuffer && tmpBuffer.length > 0){
-          for(i=0; i < tmpBuffer.length; i++){
-            var _recBuffer = new Array(2);
-            _recBuffer[0] = tmpBuffer[i];
-            _recBuffer[1] = tmpBuffer[i];
-            global.record(_recBuffer);
-          }
-        }
+				if(tmpBuffer && tmpBuffer.length > 0){
+					for(i=0; i < tmpBuffer.length; i++){
+						var _recBuffer = new Array(2);
+						_recBuffer[0] = tmpBuffer[i];
+						_recBuffer[1] = tmpBuffer[i];
+						global.record(_recBuffer);
+					}
+				}
 
-      } else {
-        for(i=0; i < tmpBuffer.length; i++){
-          global.record(tmpBuffer[i]);
-        }
-      }
-    }
+			} else {
+				for(i=0; i < tmpBuffer.length; i++){
+					global.record(tmpBuffer[i]);
+				}
+			}
+		}
 
 		//buffer audio data
 		global.record(e.data.buffer);
@@ -94,34 +94,34 @@ global.onmessage = function(e){
 	case 'stop':
 		SilenceDetector.exec(e.data.cmd, e.data);
 		break;
-    ////////////////////////MOD end
-  }
+		////////////////////////MOD end
+	}
 };
 
 global.init = function(config){
-  resampler = null;
-  targetSampleRate = void(0);
-  sampleRate = config.sampleRate;
-  bufferSize = config.bufferSize;
-  global.setConfig(config);
+	resampler = null;
+	targetSampleRate = void(0);
+	sampleRate = config.sampleRate;
+	bufferSize = config.bufferSize;
+	global.setConfig(config);
 }
 
 global.setConfig = function(config){
-  if(typeof config.isDebug !== 'undefined'){
-    global.isDebug = config.isDebug;
-  }
-  if(typeof config.targetSampleRate !== 'undefined'){
-    targetSampleRate = config.targetSampleRate;
-    if(targetSampleRate !== sampleRate){
-      resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
-    }
-  }
+	if(typeof config.isDebug !== 'undefined'){
+		global.isDebug = config.isDebug;
+	}
+	if(typeof config.targetSampleRate !== 'undefined'){
+		targetSampleRate = config.targetSampleRate;
+		if(targetSampleRate !== sampleRate){
+			resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+		}
+	}
 }
 
 global.record = function(inputBuffer){
-  recBuffersL.push(inputBuffer[0]);
-  recBuffersR.push(inputBuffer[1]);
-  recLength += inputBuffer[0].length;
+	recBuffersL.push(inputBuffer[0]);
+	recBuffersR.push(inputBuffer[1]);
+	recLength += inputBuffer[0].length;
 }
 
 global.calcLength = function(recBuffers){
@@ -131,34 +131,34 @@ global.calcLength = function(recBuffers){
 }
 
 global.exportWAV = function(type){
-  var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
-  var bufferR = global.mergeBuffersFloat(recBuffersR, recLength);
-  var interleaved = global.interleave(bufferL, bufferR);
-  var dataview = global.encodeWAV(interleaved);
-  var audioBlob = new Blob([dataview], { type: type });
+	var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+	var bufferR = global.mergeBuffersFloat(recBuffersR, recLength);
+	var interleaved = global.interleave(bufferL, bufferR);
+	var dataview = global.encodeWAV(interleaved);
+	var audioBlob = new Blob([dataview], { type: type });
 
-  global.postMessage(audioBlob);
+	global.postMessage(audioBlob);
 }
 
 global.exportMonoWAV = function(type){
 
-  var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
-  var dataview = global.encodeWAV(global.doResample(bufferL), true);
-  // global.clear();
-  var audioBlob = new Blob([dataview], { type: type });
+	var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+	var dataview = global.encodeWAV(global.doResample(bufferL), true);
+	// global.clear();
+	var audioBlob = new Blob([dataview], { type: type });
 
-  global.postMessage(audioBlob);
+	global.postMessage(audioBlob);
 }
 
 global.exportMonoPCM = function(type){
-	  var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
-	  var channelBuffer = global.doResample(bufferL);
-	  // this.clear();
-	  var buffer = new ArrayBuffer(channelBuffer.length * 2);
-	  var view = new DataView(buffer);
-	  global.floatTo16BitPCM(view, 0, channelBuffer);
+		var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+		var channelBuffer = global.doResample(bufferL);
+		// this.clear();
+		var buffer = new ArrayBuffer(channelBuffer.length * 2);
+		var view = new DataView(buffer);
+		global.floatTo16BitPCM(view, 0, channelBuffer);
 
-	  this.postMessage(view);
+		this.postMessage(view);
 }
 
 /** resample sampleRate -> targetSampleRate, @see #setConfig */
@@ -174,103 +174,103 @@ global.doResample = function(buffer){
  */
 global.getBuffers = function(id) {
 
-  var buffers = [];
-  buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
-  buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
+	var buffers = [];
+	buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
+	buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
 
-  if(typeof id !== 'undefined'){
-    global.postMessage({buffers: buffers, id: id, size: recLength});
-  } else {
-    buffers.size = recLength;
-    global.postMessage(buffers);
-  }
+	if(typeof id !== 'undefined'){
+		global.postMessage({buffers: buffers, id: id, size: recLength});
+	} else {
+		buffers.size = recLength;
+		global.postMessage(buffers);
+	}
 
 }
 
 global.clear = function(){
-  recLength = 0;
-  recBuffersL = [];
-  recBuffersR = [];
+	recLength = 0;
+	recBuffersL = [];
+	recBuffersR = [];
 }
 
 global.mergeBuffersFloat = function(recBuffers, recLength){
-  var result = new Float32Array(recLength);
-  var offset = 0;
-  for (var i = 0; i < recBuffers.length; i++){
-    result.set(recBuffers[i], offset);
-    offset += recBuffers[i].length;
-  }
-  return result;
+	var result = new Float32Array(recLength);
+	var offset = 0;
+	for (var i = 0; i < recBuffers.length; i++){
+		result.set(recBuffers[i], offset);
+		offset += recBuffers[i].length;
+	}
+	return result;
 }
 
 global.interleave = function(inputL, inputR){
-  var length = inputL.length + inputR.length;
-  var result = new Float32Array(length);
+	var length = inputL.length + inputR.length;
+	var result = new Float32Array(length);
 
-  var index = 0,
-    inputIndex = 0;
+	var index = 0,
+		inputIndex = 0;
 
-  while (index < length){
-    result[index++] = inputL[inputIndex];
-    result[index++] = inputR[inputIndex];
-    inputIndex++;
-  }
-  return result;
+	while (index < length){
+		result[index++] = inputL[inputIndex];
+		result[index++] = inputR[inputIndex];
+		inputIndex++;
+	}
+	return result;
 }
 
 global.floatTo16BitPCM = function(output, offset, input){
-  for (var i = 0; i < input.length; i++, offset+=2){
-    var s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-  }
+	for (var i = 0; i < input.length; i++, offset+=2){
+		var s = Math.max(-1, Math.min(1, input[i]));
+		output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+	}
 }
 
 global.writeString = function(view, offset, string){
-  for (var i = 0; i < string.length; i++){
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
+	for (var i = 0; i < string.length; i++){
+		view.setUint8(offset + i, string.charCodeAt(i));
+	}
 }
 
 global.encodeWAV = function(samples, mono){
 
-  var buffer = new ArrayBuffer(44 + samples.length * 2);
-  var view = new DataView(buffer);
+	var buffer = new ArrayBuffer(44 + samples.length * 2);
+	var view = new DataView(buffer);
 
-  var channels = mono? 1 : 2;
-  var bitsPerSample = 16;
-  var bytesPerSample = bitsPerSample / 8;
-  var length = samples.length * bytesPerSample;
+	var channels = mono? 1 : 2;
+	var bitsPerSample = 16;
+	var bytesPerSample = bitsPerSample / 8;
+	var length = samples.length * bytesPerSample;
 
-  /* RIFF identifier */
-  this.writeString(view, 0, 'RIFF');
-  /* file length */
-  view.setUint32(4, 32 + length, true);
-  /* RIFF type */
-  this.writeString(view, 8, 'WAVE');
-  /* format chunk identifier */
-  this.writeString(view, 12, 'fmt ');
-  /* format chunk length */
-  view.setUint32(16, 16, true);
-  /* sample format (raw) */
-  view.setUint16(20, 1, true);
-  /* channel count */
-  view.setUint16(22, channels, true);
-  /* sample rate */
-  view.setUint32(24, sampleRate, true);
-  /* byte rate (sample rate * block align) */
-  view.setUint32(28, sampleRate * channels * bytesPerSample, true);
-  /* block align (channel count * bytes per sample) */
-  view.setUint16(32, channels * bytesPerSample, true);
-  /* bits per sample */
-  view.setUint16(34, bitsPerSample, true);
-  /* data chunk identifier */
-  this.writeString(view, 36, 'data');
-  /* data chunk length */
-  view.setUint32(40, length, true);
+	/* RIFF identifier */
+	this.writeString(view, 0, 'RIFF');
+	/* file length */
+	view.setUint32(4, 32 + length, true);
+	/* RIFF type */
+	this.writeString(view, 8, 'WAVE');
+	/* format chunk identifier */
+	this.writeString(view, 12, 'fmt ');
+	/* format chunk length */
+	view.setUint32(16, 16, true);
+	/* sample format (raw) */
+	view.setUint16(20, 1, true);
+	/* channel count */
+	view.setUint16(22, channels, true);
+	/* sample rate */
+	view.setUint32(24, sampleRate, true);
+	/* byte rate (sample rate * block align) */
+	view.setUint32(28, sampleRate * channels * bytesPerSample, true);
+	/* block align (channel count * bytes per sample) */
+	view.setUint16(32, channels * bytesPerSample, true);
+	/* bits per sample */
+	view.setUint16(34, bitsPerSample, true);
+	/* data chunk identifier */
+	this.writeString(view, 36, 'data');
+	/* data chunk length */
+	view.setUint32(40, length, true);
 
-  this.floatTo16BitPCM(view, 44, samples);
+	this.floatTo16BitPCM(view, 44, samples);
 
-  return view;
+	return view;
 }
 
 })(typeof window !== 'undefined'? window : typeof self !== 'undefined'? self : typeof global !== 'undefined'? global : this);
