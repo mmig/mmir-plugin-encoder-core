@@ -17,6 +17,7 @@ var WORKER_PATH = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-p
 var Recorder = function(source, cfg){
 		var config = cfg || {};
 		var bufferLen = config.bufferLen || 4096;
+		var channels = config.channels || 2;
 //		this.context = source.context;
 //		this.node = this.createScriptProcessor(this.context, bufferLen, 2, 2);
 		var worker = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? __webpack_require__(config.workerPath || WORKER_PATH)() : new Worker(config.workerPath || WORKER_PATH);
@@ -35,12 +36,13 @@ var Recorder = function(source, cfg){
 
 		var doRecordAudio = function(e){
 			if (!recording) return;
+			var buffers = new Array(channels);
+			for(var i=0; i < channels; ++i){
+				buffers[i] = e.inputBuffer.getChannelData(i);
+			}
 			worker.postMessage({
 				cmd: 'record',
-				buffer: [
-					e.inputBuffer.getChannelData(0),
-					e.inputBuffer.getChannelData(1)
-				]
+				buffer: buffers,
 			});
 		}
 
@@ -55,7 +57,9 @@ var Recorder = function(source, cfg){
 
 			//backwards compatibility: use older createJavaScriptNode(), if new API function is not available
 			var funcName = !this.context.createScriptProcessor? 'JavaScriptNode' : 'ScriptProcessor';
-			this.node = this.context['create'+funcName](bufferLen, 2, /*output channels TODO make configurable!*/ 2);
+			var inputChannels = inputSource.channelCount || 2;//input channels
+			var outputChannels = channels;//output channels
+			this.node = this.context['create'+funcName](bufferLen, inputChannels, outputChannels);
 
 			this.node.onaudioprocess = doRecordAudio;
 

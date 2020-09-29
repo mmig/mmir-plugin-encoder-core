@@ -116,7 +116,7 @@ global.onmessage = function(e) {
 		global.record(e.data.buffer);
 
 		//detect noise (= speech) and silence in audio:
-		eosDetected = SilenceDetector.isSilent(e.data.buffer.length == 2? e.data.buffer[0]:e.data.buffer);
+		eosDetected = SilenceDetector.isSilent(e.data.buffer[0]);
 		if(global.isDebug) console.log("eosDetected: " + eosDetected);//FIXME DEBUG
 		self.postMessage({cmd: 'fireChunkStored'});
 

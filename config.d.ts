@@ -13,17 +13,16 @@ import { MediaManagerPluginEntry } from 'mmir-lib';
  * (if specified via the options, values will override configuration settings).
  */
 export interface PluginConfig {
-  webAudioInput?: PluginConfigEntry;
+  webAudioInput?: PluginConfigEntry | MicrophonePluginConfigEntry;
+  /** for (simple) end-of-speech detection */
+  silenceDetector?: SilenceDetectorPluginConfigEntry;
 }
 
 export interface PluginConfigEntry extends MediaManagerPluginEntry {
 
-  /** for (simple) end-of-speech detection */
-  silenceDetector?: SilenceDetectorPluginConfigEntry;
-
-    //NOT IMPLEMENTED/SUPPORTED, TODO?
-    // /** @example  "2000000" */
-    // silenceBuffer?: number|string;
+  //NOT IMPLEMENTED/SUPPORTED, TODO?
+  // /** @example  "2000000" */
+  // silenceBuffer?: number|string;
 }
 
 export interface SilenceDetectorPluginConfigEntry {
@@ -42,6 +41,69 @@ export interface SilenceDetectorPluginConfigEntry {
    * @default 15
    */
   resetCount: number | string;
+}
+
+export interface MicrophonePluginConfigEntry {
+  /**
+   * preferred number of channels for capturing/recording audio from microphone
+   *
+   * NOTE: may not be supported by environment
+   *
+   * @type number
+   * @default 1
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/channelCount
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/channelCount
+   */
+  channelCount?: number;
+  /**
+   * preferred sample rate for capturing/recording audio from microphone
+   *
+   * NOTE: may not be supported by environment
+   *
+   * @type number
+   * @default 44100
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/sampleRate
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/sampleRate
+   */
+  sampleRate?: number;
+  /**
+   * whether or not request _automatic gain (input volume) control_ when capturing/recording audio from microphone
+   *
+   * NOTE: may not be supported by environment
+   *
+   * @type boolean
+   * @default true
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/autoGainControl
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/autoGainControl
+   */
+  autoGainControl?: boolean;
+  /**
+   * whether or not request _echo cancellation_ when capturing/recording audio from microphone
+   *
+   * NOTE: may not be supported by environment
+   *
+   * @type boolean
+   * @default false
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/echoCancellation
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation
+   */
+  echoCancellation?: boolean;
+  /**
+   * whether or not request _noise supression_ when capturing/recording audio from microphone
+   *
+   * NOTE: may not be supported by environment
+   *
+   * @type boolean
+   * @default true
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/noiseSuppression
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/noiseSuppression
+   */
+  noiseSuppression?: boolean;
 }
 
 /**
