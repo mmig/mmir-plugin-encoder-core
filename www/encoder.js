@@ -2,10 +2,9 @@
 ;(function(global){
 
 var recLength = 0,
-		recBuffers = [],
 		recBuffersL = [],
-		recBuffersR = [],
 		sampleRate = -1,
+		channels = -1,
 		eosDetected = false,
 		bufferSize,
 		targetSampleRate,
@@ -31,13 +30,6 @@ global.exportForASR = function(recBuffers, recLength){
 		return the_blob;
 		// return samples;
 }
-
-
-global.record = function(inputBuffer){
-		recBuffers.push(inputBuffer);
-		recLength += inputBuffer.length;
-		if(global.isDebug) console.log("encoder RECORD called!");
-	}
 
 global.getMergedBufferLength = function(bufferList){
 		var i=0, size = bufferList.length, total=0;
@@ -73,7 +65,8 @@ global.onmessage = function(e) {
 		break;
 	case 'encode':
 		if(global.isDebug) console.debug('encode '+recLength);
-		var buffMerged = global.mergeBuffersFloat(recBuffersL, recLength);
+		//TODO support more than 1 channel?
+		var buffMerged = global.mergeBuffersFloat(recordingBuffers[0], recLength);
 		encoder.encodeBuffer(buffMerged);
 		global.clear();
 		break;
@@ -92,22 +85,21 @@ global.onmessage = function(e) {
 			eosDetected = false;
 			var tmpBuffer = SilenceDetector.loadBuffer();
 			if(global.isDebug) console.info("encoder onmessage record loadBuffers");//FIXME DEBUG
-			if(e.data.buffer.length === 2){
-
-				if(tmpBuffer && tmpBuffer.length > 0){
-					if(global.isDebug) console.log("tmpBuffer1: ", tmpBuffer);//FIXME DEBUG
-					for(i=0; i < tmpBuffer.length; i++){
-						var _recBuffer = new Array(2);
-						_recBuffer[0] = tmpBuffer[i];
-						_recBuffer[1] = tmpBuffer[i];
-						global.record(_recBuffer);
-					}
-				}
-
-			} else {
-				if(global.isDebug) console.log("tmpBuffer2: ", tmpBuffer);//FIXME DEBUG
+			if(tmpBuffer && tmpBuffer.length > 0){
+				var tempChannels = e.data.buffer.length;
+				if(global.isDebug) console.log("tmpBuffer (target channel count: "+tempChannels+"): ", tmpBuffer);//FIXME DEBUG
+				var tempBuff, j, _recBuffer;
 				for(i=0; i < tmpBuffer.length; i++){
-					global.record(tmpBuffer[i]);
+					tempBuff = tmpBuffer[i];
+					if(tempChannels > 1){
+						_recBuffer = new Array(tempChannels);
+						for(j=0; j < tempChannels; ++j){
+							_recBuffer[j] = tempBuff;
+						}
+					} else {
+						_recBuffer = [tempBuff];
+					}
+					global.record(_recBuffer);
 				}
 			}
 		}
@@ -143,7 +135,9 @@ global.init = function(config){
 	targetSampleRate = void(0);
 	sampleRate = config.sampleRate;
 	bufferSize = config.bufferSize;
+	channels = config.channels;
 	global.setConfig(config);
+	global.clear();
 }
 
 global.setConfig = function(config){
@@ -170,8 +164,14 @@ global.setConfig = function(config){
 }
 
 global.record = function(inputBuffer){
-	recBuffersL.push(inputBuffer[0]);
-	recBuffersR.push(inputBuffer[1]);
+	var len = inputBuffer.length;
+	recordingBuffers[0].push(inputBuffer[0]);
+	if(len > 1){
+		recordingBuffers[1].push(inputBuffer[1]);
+		if(len > 2){
+			console.warn('Encoder: can only record max. 2 channels, ignoring other '+(len-2)+' channel(s)' );
+		}
+	}
 	recLength += inputBuffer[0].length;
 }
 
@@ -182,9 +182,11 @@ global.doResample = function(buffer){
 
 global.getBuffers = function(id) {
 
-	var buffers = [];
-	buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
-	buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
+	var len = recordingBuffers.length;
+	var buffers = new Array(len);
+	for(var i=0; i < len; ++i){
+		buffers.push( global.mergeBuffersFloat(recordingBuffers[i], recLength) );
+	}
 
 	if(typeof id !== 'undefined'){
 		global.postMessage({buffers: buffers, id: id, size: recLength});
@@ -196,10 +198,12 @@ global.getBuffers = function(id) {
 }
 
 global.getBuffersFor = function(id) {
-	var buffers = [];
 
-	buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
-	buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
+	var len = recordingBuffers.length;
+	var buffers = new Array(len);
+	for(var i=0; i < len; ++i){
+		buffers.push( global.mergeBuffersFloat(recordingBuffers[i], recLength) );
+	}
 	//global.postMessage({buffers: buffers, id: id});
 	global.postMessage({buffers: buffers, id: id, size: recLength});
 }
@@ -207,8 +211,10 @@ global.getBuffersFor = function(id) {
 global.clear = function(){
 	if(global.isDebug) console.debug('clear REC '+recLength);
 	recLength = 0;
-	recBuffersL = [];
-	recBuffersR = [];
+	recordingBuffers = new Array(channels);
+	for(var i=0; i < channels; ++i){
+		recordingBuffers[i] = [];
+	}
 }
 
 

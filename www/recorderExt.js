@@ -68,6 +68,7 @@ var Recorder = function(source, cfg){
 				config: {
 					sampleRate: this.context.sampleRate,
 					bufferSize: bufferLen,
+					channels: channels,
 					isDebug: config.debug
 				}
 			});

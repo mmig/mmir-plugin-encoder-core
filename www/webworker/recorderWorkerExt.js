@@ -27,9 +27,9 @@ if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
 ;(function(global){
 
 var recLength = 0,
-	recBuffersL = [],
-	recBuffersR = [],
+	recordingBuffers = [],
 	sampleRate = -1,
+	channels = -1,
 	eosDetected = false,
 	bufferSize,
 	targetSampleRate,
@@ -103,7 +103,9 @@ global.init = function(config){
 	targetSampleRate = void(0);
 	sampleRate = config.sampleRate;
 	bufferSize = config.bufferSize;
+	channels = config.channels;
 	global.setConfig(config);
+	global.clear();
 }
 
 global.setConfig = function(config){
@@ -113,14 +115,31 @@ global.setConfig = function(config){
 	if(typeof config.targetSampleRate !== 'undefined'){
 		targetSampleRate = config.targetSampleRate;
 		if(targetSampleRate !== sampleRate){
-			resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+			// -> create resampler instance if neccessary
+			if(!resampler || resampler.sourceSampleRate !== sampleRate || resampler.targetSampleRate !== targetSampleRate){
+				resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+				resampler.sourceSampleRate = sampleRate;
+				resampler.targetSampleRate = targetSampleRate;
+			}
+		} else {
+			// -> remove existing resample, if one exists
+			resampler = null;
 		}
+	} else {
+		// -> remove existing resample, if one exists
+		resampler = null;
 	}
 }
 
 global.record = function(inputBuffer){
-	recBuffersL.push(inputBuffer[0]);
-	recBuffersR.push(inputBuffer[1]);
+	var len = inputBuffer.length;
+	recordingBuffers[0].push(inputBuffer[0]);
+	if(len > 1){
+		recordingBuffers[1].push(inputBuffer[1]);
+		if(len > 2){
+			console.warn('RecorderWorker: can only record max. 2 channels, ignoring other '+(len-2)+' channel(s)' );
+		}
+	}
 	recLength += inputBuffer[0].length;
 }
 
@@ -131,10 +150,18 @@ global.calcLength = function(recBuffers){
 }
 
 global.exportWAV = function(type){
-	var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
-	var bufferR = global.mergeBuffersFloat(recBuffersR, recLength);
-	var interleaved = global.interleave(bufferL, bufferR);
-	var dataview = global.encodeWAV(interleaved);
+	var len = recordingBuffers.length;
+	var bufferL = global.mergeBuffersFloat(recordingBuffers[0], recLength);
+	var bufferR, mono = true;
+	if(len > 1){
+		mono = flase;
+		bufferR = global.mergeBuffersFloat(recordingBuffers[1], recLength);
+		if(len > 2){
+			console.warn('RecorderWorker: can only create WAV with max. 2 channels, ignoring other '+(len-2)+' channel(s)' );
+		}
+	}
+	var interleaved = mono? bufferL : global.interleave(bufferL, bufferR);
+	var dataview = global.encodeWAV(interleaved, mono);
 	var audioBlob = new Blob([dataview], { type: type });
 
 	global.postMessage(audioBlob);
@@ -142,7 +169,7 @@ global.exportWAV = function(type){
 
 global.exportMonoWAV = function(type){
 
-	var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+	var bufferL = global.mergeBuffersFloat(recordingBuffers[0], recLength);
 	var dataview = global.encodeWAV(global.doResample(bufferL), true);
 	// global.clear();
 	var audioBlob = new Blob([dataview], { type: type });
@@ -150,8 +177,8 @@ global.exportMonoWAV = function(type){
 	global.postMessage(audioBlob);
 }
 
-global.exportMonoPCM = function(type){
-		var bufferL = global.mergeBuffersFloat(recBuffersL, recLength);
+global.exportMonoPCM = function(_type){
+		var bufferL = global.mergeBuffersFloat(recordingBuffers[0], recLength);
 		var channelBuffer = global.doResample(bufferL);
 		// this.clear();
 		var buffer = new ArrayBuffer(channelBuffer.length * 2);
@@ -174,9 +201,11 @@ global.doResample = function(buffer){
  */
 global.getBuffers = function(id) {
 
-	var buffers = [];
-	buffers.push( global.mergeBuffersFloat(recBuffersL, recLength) );
-	buffers.push( global.mergeBuffersFloat(recBuffersR, recLength) );
+	var len = recordingBuffers.length;
+	var buffers = new Array(len);
+	for(var i=0; i < len; ++i){
+		buffers.push( global.mergeBuffersFloat(recordingBuffers[i], recLength) );
+	}
 
 	if(typeof id !== 'undefined'){
 		global.postMessage({buffers: buffers, id: id, size: recLength});
@@ -189,8 +218,10 @@ global.getBuffers = function(id) {
 
 global.clear = function(){
 	recLength = 0;
-	recBuffersL = [];
-	recBuffersR = [];
+	recordingBuffers = new Array(channels);
+	for(var i=0; i < channels; ++i){
+		recordingBuffers[i] = [];
+	}
 }
 
 global.mergeBuffersFloat = function(recBuffers, recLength){
