@@ -61,8 +61,9 @@ global.mergeBuffersUint = function(channelBuffer, recordingLength){
 	return result;
 }
 
-var encoder = global.encoderInstance;
 global.onmessage = function(e) {
+
+	var encoder = global.encoderInstance;
 
 	switch (e.data.cmd) {
 
