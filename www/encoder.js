@@ -152,8 +152,19 @@ global.setConfig = function(config){
 	if(typeof config.targetSampleRate !== 'undefined'){
 		targetSampleRate = config.targetSampleRate;
 		if(targetSampleRate !== sampleRate){
-			resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+			// -> create resampler instance if neccessary
+			if(!resampler || resampler.sourceSampleRate !== sampleRate || resampler.targetSampleRate !== targetSampleRate){
+				resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
+				resampler.sourceSampleRate = sampleRate;
+				resampler.targetSampleRate = targetSampleRate;
+			}
+		} else {
+			// -> remove existing resample, if one exists
+			resampler = null;
 		}
+	} else {
+		// -> remove existing resample, if one exists
+		resampler = null;
 	}
 }
 
