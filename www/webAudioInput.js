@@ -26,9 +26,9 @@
 
 
 define(
-['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './recorderExt.js', 'mmirf/webMicLevels'],
+['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './recorderExt.js'],
 function(
-		mediaManager, config, consts, Logger, require, mod, Recorder, _micLevelsAnalysis
+		mediaManager, config, consts, Logger, require, mod, Recorder
 ){
 
 	return {
@@ -1080,20 +1080,24 @@ function(
 
 			//load the necessary scripts and then call htmlAudioConstructor
 
-			if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
-				try{
-					processLoaded(__webpack_require__(implFile.replace(/\.js$/i, '')));
-				} catch(err){
-					handleError(err);
+			mediaManager.loadFile('webMicLevels.js', function(){
+
+				if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
+					try{
+						processLoaded(__webpack_require__(implFile.replace(/\.js$/i, '')));
+					} catch(err){
+						handleError(err);
+					}
+				} else {
+					require([implFile], processLoaded, function(_err){
+						//try filePath as module ID instead:
+						var moduleId = implFile.replace(/\.js$/i, '');
+						(_logger? _logger : console).debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
+						require([moduleId], processLoaded, handleError)
+					});
 				}
-			} else {
-				require([implFile], processLoaded, function(_err){
-					//try filePath as module ID instead:
-					var moduleId = implFile.replace(/\.js$/i, '');
-					(_logger? _logger : console).debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
-					require([moduleId], processLoaded, handleError)
-				});
-			}
+
+			}, handleError);
 
 		}//END: initialize()
 
