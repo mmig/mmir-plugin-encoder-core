@@ -73,33 +73,11 @@
  * License (MIT)
  *
  * modifications:
- *
- *	Copyright (C) 2013 DFKI GmbH
- *	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
- *	German Research Center for Artificial Intelligence
- *	http://www.dfki.de
+ *	Copyright (c) 2013-2020 DFKI GmbH, Deutsches Forschungszentrum fuer Kuenstliche Intelligenz (German Research Center for Artificial Intelligence), https://www.dfki.de
  *
  * based on
  *	Copyright (C) 2013 Matt Diamond (MIT License)
  *
- *	Permission is hereby granted, free of charge, to any person obtaining a
- *	copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
- *
- *	The above copyright notice and this permission notice shall be included
- *	in all copies or substantial portions of the Software.
- *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- *	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- *	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- *	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- *	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 
@@ -115,6 +93,7 @@ var WORKER_PATH = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-p
 var Recorder = function(source, cfg){
 		var config = cfg || {};
 		var bufferLen = config.bufferLen || 4096;
+		var channels = config.channels || 2;
 //		this.context = source.context;
 //		this.node = this.createScriptProcessor(this.context, bufferLen, 2, 2);
 		var worker = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? __webpack_require__(config.workerPath || WORKER_PATH)() : new Worker(config.workerPath || WORKER_PATH);
@@ -133,12 +112,13 @@ var Recorder = function(source, cfg){
 
 		var doRecordAudio = function(e){
 			if (!recording) return;
+			var buffers = new Array(channels);
+			for(var i=0; i < channels; ++i){
+				buffers[i] = e.inputBuffer.getChannelData(i);
+			}
 			worker.postMessage({
 				cmd: 'record',
-				buffer: [
-					e.inputBuffer.getChannelData(0),
-					e.inputBuffer.getChannelData(1)
-				]
+				buffer: buffers,
 			});
 		}
 
@@ -153,7 +133,9 @@ var Recorder = function(source, cfg){
 
 			//backwards compatibility: use older createJavaScriptNode(), if new API function is not available
 			var funcName = !this.context.createScriptProcessor? 'JavaScriptNode' : 'ScriptProcessor';
-			this.node = this.context['create'+funcName](bufferLen, 2, /*output channels TODO make configurable!*/ 2);
+			var inputChannels = inputSource.channelCount || 2;//input channels
+			var outputChannels = channels;//output channels
+			this.node = this.context['create'+funcName](bufferLen, inputChannels, outputChannels);
 
 			this.node.onaudioprocess = doRecordAudio;
 
@@ -162,6 +144,7 @@ var Recorder = function(source, cfg){
 				config: {
 					sampleRate: this.context.sampleRate,
 					bufferSize: bufferLen,
+					channels: channels,
 					isDebug: config.debug
 				}
 			});

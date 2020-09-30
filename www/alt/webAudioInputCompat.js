@@ -69,38 +69,12 @@
 
 }(typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? global : this, function (require) {
 
-	/*
- * 	Copyright (C) 2012-2020 DFKI GmbH
- * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
- * 	German Research Center for Artificial Intelligence
- * 	http://www.dfki.de
- *
- * 	Permission is hereby granted, free of charge, to any person obtaining a
- * 	copy of this software and associated documentation files (the
- * 	"Software"), to deal in the Software without restriction, including
- * 	without limitation the rights to use, copy, modify, merge, publish,
- * 	distribute, sublicense, and/or sell copies of the Software, and to
- * 	permit persons to whom the Software is furnished to do so, subject to
- * 	the following conditions:
- *
- * 	The above copyright notice and this permission notice shall be included
- * 	in all copies or substantial portions of the Software.
- *
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-
+	
 
 	
   return {initialize: function (){
     var origArgs = arguments;
-    require(['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './recorderExt.js', 'mmirf/webMicLevels'], function (mediaManager, config, consts, Logger, require, mod, Recorder, _micLevelsAnalysis){
+    require(['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './recorderExt.js'], function (mediaManager, config, consts, Logger, require, mod, Recorder){
     var origInit = (function(){
       {
 
@@ -482,7 +456,12 @@
 			};
 
 			/** @memberOf Html5AudioInput# */
-			var nonFunctional = false;
+			var nonFunctional = true;
+
+			/** @memberOf Html5AudioInput#
+			 * @type MediaTrackSupportedConstraints | boolean
+			 */
+			var supportedMediaConstraints = false;
 
 			/**
 			 * The name of the plugin (w.r.t. the specific implementation).
@@ -586,6 +565,19 @@
 					audio_context = createAudioContext();
 					var input = audio_context.createMediaStreamSource(stream);
 
+					var settings;
+					if(stream.getAudioTracks){
+						var audio = stream.getAudioTracks();
+						if(audio && audio.length > 0 && audio[0].getSettings){
+							settings = audio[0].getSettings();
+						}
+					}
+
+					if(settings && settings.channelCount){
+						input.channelCount = settings.channelCount;
+						input.channelCountMode = 'explicit';
+					}
+
 					if(mediaManager.micLevelsAnalysis.enabled()){
 						mediaManager.micLevelsAnalysis.start({inputSource: input, audioContext: audio_context});
 					}
@@ -606,8 +598,9 @@
 							}
 						}
 
+						var channels = config.get([_pluginName, 'channelCount'], config.get([_basePluginName, 'channelCount'], 1));
 						var recorderWorkerPath = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? workerImpl : consts.getWorkerPath()+workerImpl;
-						recorder = new Recorder(input, {workerPath: recorderWorkerPath, debug: _logger.isDebug()});
+						recorder = new Recorder(input, {workerPath: recorderWorkerPath, debug: _logger.isDebug(), channels: channels});
 					} else {
 						recorder.init(input);
 					}
@@ -705,10 +698,11 @@
 
 					/** @memberOf Html5AudioInput.recorder# */
 					var silenceDetectionConfig = {
-							sampleRate: input.context.sampleRate,
-							noiseTreshold : config.get(["silenceDetector", "noiseTreshold"]),
-							pauseCount : config.get(["silenceDetector", "pauseCount"]),
-							resetCount : config.get(["silenceDetector", "resetCount"])
+							sampleRate:    input.context.sampleRate,
+							noiseTreshold: config.get([_pluginName, "silenceDetector", "noiseTreshold"], config.get(["silenceDetector", "noiseTreshold"])),
+							pauseCount:    config.get([_pluginName, "silenceDetector", "pauseCount"],    config.get(["silenceDetector", "pauseCount"])),
+							resetCount:    config.get([_pluginName, "silenceDetector", "resetCount"],    config.get(["silenceDetector", "resetCount"])),
+							bufferSize:    config.get([_pluginName, "silenceDetector", "bufferSize"],    config.get(["silenceDetector", "bufferSize"])),
 					};
 
 					//initialize silence-detection:
@@ -727,10 +721,16 @@
 					//window.AudioContext = window.AudioContext || window.webkitAudioContext;
 //							audio_context = new AudioContext;
 					nonFunctional = !(AudioContext || webkitAudioContext);
+					if(!nonFunctional && navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints){
+						supportedMediaConstraints = navigator.mediaDevices.getSupportedConstraints();
+					} else {
+						supportedMediaConstraints = false;
+					}
 				}
 				catch (e) {
 					_logger.error('No web audio support in this browser! Error: '+(e.stack? e.stack : e));
 					nonFunctional = true;
+					supportedMediaConstraints = false;
 					if (currentFailureCallback)
 						currentFailureCallback(e);
 				}
@@ -765,6 +765,56 @@
 					}
 				}
 
+
+				/**
+				 * HELPER get audio constraints for requesting microphone base on
+				 * 				browser capabilities
+				 * @returns MediaTrackConstraints | true
+				 * @memberOf Html5AudioInput#
+				 */
+				var getAudioConstraints = function(){
+					if(supportedMediaConstraints){
+
+						var val;
+						var isset = false;
+						var constr = {};
+
+						if(supportedMediaConstraints.channelCount){
+							//DEFAULT: 1 (mono)
+							isset = true;
+							val = config.get([_pluginName, 'channelCount'], config.get([_basePluginName, 'channelCount'], 1));
+							constr.channelCount = val;
+						}
+						if(supportedMediaConstraints.sampleRate){
+							//DEFAULT: 44100
+							isset = true;
+							val = config.get([_pluginName, 'sampleRate'], config.get([_basePluginName, 'sampleRate'], 44100));
+							constr.sampleRate = val;
+						}
+						if(supportedMediaConstraints.autoGainControl){
+							//DEFAULT: true (enabled)
+							isset = true;
+							val = config.get([_pluginName, 'autoGainControl'], config.get([_basePluginName, 'autoGainControl'], true));
+							constr.echoCancellation = val;
+						}
+						if(supportedMediaConstraints.echoCancellation){
+							//DEFAULT: false (disabled)
+							isset = true;
+							val = config.get([_pluginName, 'echoCancellation'], config.get([_basePluginName, 'echoCancellation'], false));
+							constr.echoCancellation = val;
+						}
+						if(supportedMediaConstraints.noiseSuppression){
+							//DEFAULT: true (enabled)
+							isset = true;
+							val = config.get([_pluginName, 'noiseSuppression'], config.get([_basePluginName, 'noiseSuppression'], true));
+							constr.noiseSuppression = val;
+						}
+
+						return isset? constr : true;
+					}
+					return true;
+				}
+
 				/**
 				 * get audioInputStream, i.e. open microphone
 				 *
@@ -777,12 +827,12 @@
 
 					var onStarted = callback? function(stream){ onStartUserMedia.call(this, stream, callback); } : onStartUserMedia;
 
-					navigator.__getUserMedia({audio: true}, onStarted, function onError(e) {
+					navigator.__getUserMedia({audio: getAudioConstraints()}, onStarted, function onError(e) {
 						_logger.error('Could not access microphone: '+e);
-						if (currentFailureCallback)
+						if (currentFailureCallback){
 							currentFailureCallback(e);
-					}
-					);
+						}
+					});
 
 				};
 
@@ -917,7 +967,7 @@
 
 
 						if(options.intermediate){
-							textProcessor = statusCallback;
+							textProcessor = options.success;
 						} else {
 							/**
 							 * @param text
@@ -1153,20 +1203,24 @@
 
 			//load the necessary scripts and then call htmlAudioConstructor
 
-			if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
-				try{
-					processLoaded(__webpack_require__(implFile.replace(/\.js$/i, '')));
-				} catch(err){
-					handleError(err);
+			mediaManager.loadFile('webMicLevels.js', function(){
+
+				if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
+					try{
+						processLoaded(__webpack_require__(implFile.replace(/\.js$/i, '')));
+					} catch(err){
+						handleError(err);
+					}
+				} else {
+					require([implFile], processLoaded, function(_err){
+						//try filePath as module ID instead:
+						var moduleId = implFile.replace(/\.js$/i, '');
+						(_logger? _logger : console).debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
+						require([moduleId], processLoaded, handleError)
+					});
 				}
-			} else {
-				require([implFile], processLoaded, function(_err){
-					//try filePath as module ID instead:
-					var moduleId = implFile.replace(/\.js$/i, '');
-					(_logger? _logger : console).debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
-					require([moduleId], processLoaded, handleError)
-				});
-			}
+
+			}, handleError);
 
 		}//END: initialize()
 

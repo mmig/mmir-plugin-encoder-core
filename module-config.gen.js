@@ -5,17 +5,16 @@
  *********************************************************************/
 
 module.exports = {
-  pluginName: "webAudioInput",
-  config: [
-    /** for (simple) end-of-speech detection */
-    "silenceDetector"
-  ],
-  defaultValues: {
-    silenceDetector: null
-  },
-  subConfig: {
+  pluginName: ["silenceDetector","webAudioInput"],
+  plugins: {
     silenceDetector: {
+      pluginName: "silenceDetector",
       config: [
+        /**
+         * @type integer, or stringified integer
+         * @default 3
+         */
+        "bufferSize",
         /**
          * @type integer, or stringified integer
          * @default 15
@@ -33,9 +32,82 @@ module.exports = {
         "noiseTreshold"
       ],
       defaultValues: {
+        bufferSize: 3,
         resetCount: 15,
         pauseCount: 3,
         noiseTreshold: 0.1
+      }
+    },
+    webAudioInput: {
+      pluginName: "webAudioInput",
+      config: [
+        /**
+         * whether or not request _noise supression_ when capturing/recording audio from microphone
+         *
+         * NOTE: may not be supported by environment
+         *
+         * @type boolean
+         * @default true
+         *
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/noiseSuppression
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/noiseSuppression
+         */
+        "noiseSuppression",
+        /**
+         * whether or not request _echo cancellation_ when capturing/recording audio from microphone
+         *
+         * NOTE: may not be supported by environment
+         *
+         * @type boolean
+         * @default false
+         *
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/echoCancellation
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation
+         */
+        "echoCancellation",
+        /**
+         * whether or not request _automatic gain (input volume) control_ when capturing/recording audio from microphone
+         *
+         * NOTE: may not be supported by environment
+         *
+         * @type boolean
+         * @default true
+         *
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/autoGainControl
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/autoGainControl
+         */
+        "autoGainControl",
+        /**
+         * preferred sample rate for capturing/recording audio from microphone
+         *
+         * NOTE: may not be supported by environment
+         *
+         * @type number
+         * @default 44100
+         *
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/sampleRate
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/sampleRate
+         */
+        "sampleRate",
+        /**
+         * preferred number of channels for capturing/recording audio from microphone
+         *
+         * NOTE: may not be supported by environment
+         *
+         * @type number
+         * @default 1
+         *
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints/channelCount
+         * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/channelCount
+         */
+        "channelCount"
+      ],
+      defaultValues: {
+        noiseSuppression: true,
+        echoCancellation: false,
+        autoGainControl: true,
+        sampleRate: 44100,
+        channelCount: 1
       }
     }
   },
@@ -53,6 +125,7 @@ module.exports = {
    */
   defaultEncoders: {
     wav: "mmir-plugin-encoder-core/workers/recorderWorkerExt",
+    speex: "mmir-plugin-encoder-speex",
     flac: "mmir-plugin-encoder-flac",
     amr: "mmir-plugin-encoder-amr"
   }
