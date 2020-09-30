@@ -628,7 +628,8 @@ function(
 							sampleRate:    input.context.sampleRate,
 							noiseTreshold: config.get([_pluginName, "silenceDetector", "noiseTreshold"], config.get(["silenceDetector", "noiseTreshold"])),
 							pauseCount:    config.get([_pluginName, "silenceDetector", "pauseCount"],    config.get(["silenceDetector", "pauseCount"])),
-							resetCount:    config.get([_pluginName, "silenceDetector", "resetCount"],    config.get(["silenceDetector", "resetCount"]))
+							resetCount:    config.get([_pluginName, "silenceDetector", "resetCount"],    config.get(["silenceDetector", "resetCount"])),
+							bufferSize:    config.get([_pluginName, "silenceDetector", "bufferSize"],    config.get(["silenceDetector", "bufferSize"])),
 					};
 
 					//initialize silence-detection:

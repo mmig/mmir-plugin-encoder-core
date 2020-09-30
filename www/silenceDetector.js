@@ -156,6 +156,12 @@ function _initDetection(config){
 			resetCount = parseInt(resetCount, 10);
 		}
 	}
+	if (config.bufferSize){
+		tmpBufferSize = config.bufferSize;
+		if(typeof tmpBufferSize !== 'number'){
+			tmpBufferSize = parseInt(tmpBufferSize, 10);
+		}
+	}
 	_sendMessage(INITIALIZED);
 }
 
@@ -167,6 +173,7 @@ function _initDetection(config){
  * @param				{TypedArray} inputBuffer the current audio input buffer
  */
 function _saveBuffer(inputBuffer){
+	//TODO impl. simple ring buffer
 	if(tmpBuffer.length >= tmpBufferSize){
 		tmpBuffer.shift();
 	}
@@ -178,9 +185,13 @@ function _saveBuffer(inputBuffer){
  * @return			{Array<TypedArray>} the last n-buffered input-buffers
  */
 function _loadBuffer(){
-	var ret = tmpBuffer;
-	tmpBuffer = [];
-	return ret;
+	return tmpBuffer.splice(0);
+}
+
+function _resetBuffer(){
+	if(tmpBuffer.length > 0){
+		tmpBuffer.splice(0);
+	}
 }
 
 /**
@@ -272,9 +283,15 @@ function _isSilent(inputBuffer){
 				++lastInput;
 			}
 		}
-		if (speechCount > pauseCount){
+		// if (speechCount > pauseCount){
+		//
+		// }
 
-		}
+		//TODO convert to speech-start/-end instead of clear/silence:
+		// if (blobSizeCount === speechBlobSize){
+		// 	_sendMessage(SEND_SPEECH_STARTED);
+		// }
+
 		if (blobSizeCount >= maxBlobSize){
 			_sendMessage(SEND_PARTIAL);
 			blobSizeCount = 0;
@@ -301,8 +318,9 @@ function _start(){
 	speechCount = 0;
 	lastInput = 0;
 	recording = true;
-	_sendMessage(STARTED);
 	blobNumber = 0;
+	_resetBuffer();
+	_sendMessage(STARTED);
 }
 
 /**
@@ -322,6 +340,7 @@ function _stop(){
 		silenceCount = 0;
 		lastInput = 0;
 		blobSizeCount = 0;
+		_resetBuffer();
 	}
 	_sendMessage(STOPPED);
 }

@@ -41,6 +41,11 @@ export interface SilenceDetectorPluginConfigEntry {
    * @default 15
    */
   resetCount: number | string;
+  /**
+   * @type integer, or stringified integer
+   * @default 3
+   */
+  bufferSize: number | string;
 }
 
 export interface MicrophonePluginConfigEntry {
