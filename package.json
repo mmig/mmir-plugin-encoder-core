@@ -42,7 +42,10 @@
     }
   },
   "devDependencies": {
-    "mmir-lib": ">=5",
-    "mmir-plugin-exports": "^1.3"
+    "mmir-lib": "^6.1.0",
+    "mmir-plugin-exports": "^2.1.1"
+  },
+  "peerDependencies": {
+    "mmir-lib": ">=5"
   }
 }
