@@ -190,7 +190,7 @@ global.exportMonoPCM = function(_type){
 
 /** resample sampleRate -> targetSampleRate, @see #setConfig */
 global.doResample = function(buffer){
-	return resampler? resampler.resample(buffer) : buffer;
+	return resampler? resampler.resampler(buffer) : buffer;
 }
 
 /**

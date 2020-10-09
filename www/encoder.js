@@ -177,7 +177,7 @@ global.record = function(inputBuffer){
 
 /** resample sampleRate -> targetSampleRate, @see #setConfig */
 global.doResample = function(buffer){
-	return resampler? resampler.resample(buffer) : buffer;
+	return resampler? resampler.resampler(buffer) : buffer;
 }
 
 global.getBuffers = function(id) {
