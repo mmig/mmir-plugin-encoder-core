@@ -34,7 +34,7 @@ var recLength = 0,
 	bufferSize,
 	targetSampleRate,
 	resampler,
-	format = 'wav';
+	format = 'wav';// 'wav' | 'pcm'
 
 global.isDebug = false;
 
@@ -60,11 +60,14 @@ global.onmessage = function(e){
 		if(global.isDebug) console.log("encoder WAV finish: ");
 
 		var data;
-		if(format === wav){
-			data = global.doEncodeWAV();//<- Blob
-		} else {
+		if(format === 'pcm') {
 			data = global.doEncodeMonoPCM();//<- DataView
 			data = new Int16Array(data.buffer);
+		} else {
+			if(format !== 'wav') {
+				console.warn('unknow encoding format requested: ', format)
+			}
+			data = global.doEncodeWAV();//<- Blob
 		}
 
 		global.clear();
