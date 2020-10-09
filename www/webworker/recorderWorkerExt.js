@@ -33,7 +33,8 @@ var recLength = 0,
 	eosDetected = false,
 	bufferSize,
 	targetSampleRate,
-	resampler;
+	resampler,
+	format = 'wav';
 
 global.isDebug = false;
 
@@ -48,7 +49,24 @@ global.onmessage = function(e){
 		case 'exportMonoWAV':
 			global.exportMonoWAV(e.data.type);
 			break;
-		//MODIFICATIONs russa:
+	//MODIFICATIONs russa:
+	// case 'encode':
+	// 	if(global.isDebug) console.debug('encode WAV'+recLength);
+	// 	break;
+	case 'encClose':
+		if(global.isDebug) console.log("encoder WAV finish: ");
+
+		var data;
+		if(format === wav){
+			data = global.doEncodeWAV();//<- Blob
+		} else {
+			data = global.doEncodeMonoPCM();//<- DataView
+			data = new Int16Array(data.buffer);
+		}
+
+		global.clear();
+		global.postMessage({cmd: 'encFinished', buf: data});
+		break;
 	case 'record':
 
 		if(eosDetected){
@@ -129,6 +147,9 @@ global.setConfig = function(config){
 		// -> remove existing resample, if one exists
 		resampler = null;
 	}
+	if(typeof config.format !== 'undefined'){
+		format = config.format;
+	}
 }
 
 global.record = function(inputBuffer){
@@ -149,42 +170,66 @@ global.calcLength = function(recBuffers){
 	return len;
 }
 
-global.exportWAV = function(type){
+/**
+ * @param  {Boolean} [forceMono] OPTIONAL
+ * @return {DataView} WAV audio
+ */
+global.doEncodeWAV = function(forceMono){
 	var len = recordingBuffers.length;
-	var bufferL = global.mergeBuffersFloat(recordingBuffers[0], recLength);
+	var bufferL = global.doResample(global.mergeBuffersFloat(recordingBuffers[0], recLength));
 	var bufferR, mono = true;
-	if(len > 1){
+	if(!forceMono && len > 1){
 		mono = flase;
-		bufferR = global.mergeBuffersFloat(recordingBuffers[1], recLength);
+		bufferR = global.doResample(global.mergeBuffersFloat(recordingBuffers[1], recLength));
 		if(len > 2){
 			console.warn('RecorderWorker: can only create WAV with max. 2 channels, ignoring other '+(len-2)+' channel(s)' );
 		}
 	}
 	var interleaved = mono? bufferL : global.interleave(bufferL, bufferR);
-	var dataview = global.encodeWAV(interleaved, mono);
-	var audioBlob = new Blob([dataview], { type: type });
-
-	global.postMessage(audioBlob);
+	return global.encodeWAV(interleaved, mono);
 }
 
-global.exportMonoWAV = function(type){
-
-	var bufferL = global.mergeBuffersFloat(recordingBuffers[0], recLength);
-	var dataview = global.encodeWAV(global.doResample(bufferL), true);
-	// global.clear();
-	var audioBlob = new Blob([dataview], { type: type });
-
-	global.postMessage(audioBlob);
-}
-
-global.exportMonoPCM = function(_type){
+/**
+ * @return {DataView} (mono) PCM audio (16bit format)
+ */
+global.doEncodeMonoPCM = function(){
 		var bufferL = global.mergeBuffersFloat(recordingBuffers[0], recLength);
 		var channelBuffer = global.doResample(bufferL);
-		// this.clear();
 		var buffer = new ArrayBuffer(channelBuffer.length * 2);
 		var view = new DataView(buffer);
-		global.floatTo16BitPCM(view, 0, channelBuffer);
+		return global.floatTo16BitPCM(view, 0, channelBuffer);
+}
 
+/**
+ * posts recorded audio as WAV Blob
+ * @param  {String} [type] the MIME type (DEFAULT: 'audio/wav')
+ * @param  {Boolean} [forceMono] OPTIONAL
+ */
+global.exportWAV = function(type, forceMono){
+	type = type || 'audio/wav';
+	var dataview = global.doEncodeWAV(forceMono);
+	var audioBlob = new Blob([dataview], { type: type });
+
+	global.postMessage(audioBlob);
+}
+
+/**
+ * posts recorded audio as mono WAV Blob
+ * @param  {String} [type] the MIME type (DEFAULT: 'audio/wav')
+ */
+global.exportMonoWAV = function(type){
+	type = type || 'audio/wav';
+	var dataview = global.doEncodeWAV(true);
+	var audioBlob = new Blob([dataview], { type: type });
+
+	global.postMessage(audioBlob);
+}
+
+/**
+ * posts recorded audio as mono PCM DataView
+ */
+global.exportMonoPCM = function(){
+		var view = global.doEncodeMonoPCM();
 		this.postMessage(view);
 }
 
@@ -254,6 +299,7 @@ global.floatTo16BitPCM = function(output, offset, input){
 		var s = Math.max(-1, Math.min(1, input[i]));
 		output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
 	}
+	return output;
 }
 
 global.writeString = function(view, offset, string){
