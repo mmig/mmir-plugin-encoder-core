@@ -77,10 +77,17 @@ var Recorder = function(source, cfg){
 			this.node.connect(this.context.destination);
 		}
 
-		this.configure = function(cfg){
-			for (var prop in cfg){
-				if (cfg.hasOwnProperty(prop)){
-					config[prop] = cfg[prop];
+		this.configure = function(cfg, configureWorker){
+			if(configureWorker){
+				worker.postMessage({
+					cmd: 'config',
+					config: cfg
+				});
+			} else {
+				for (var prop in cfg){
+					if (cfg.hasOwnProperty(prop)){
+						config[prop] = cfg[prop];
+					}
 				}
 			}
 		}

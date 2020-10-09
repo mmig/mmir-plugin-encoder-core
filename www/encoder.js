@@ -63,6 +63,9 @@ global.onmessage = function(e) {
 		global.init(e.data.config);
 		encoder.encoderInit();
 		break;
+	case 'config':
+		global.setConfig(e.data.config);
+		break;
 	case 'encode':
 		if(global.isDebug) console.debug('encode '+recLength);
 		//TODO support more than 1 channel?

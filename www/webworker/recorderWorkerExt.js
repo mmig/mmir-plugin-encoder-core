@@ -50,6 +50,9 @@ global.onmessage = function(e){
 			global.exportMonoWAV(e.data.type);
 			break;
 	//MODIFICATIONs russa:
+	case 'config':
+		global.setConfig(e.data.config);
+		break;
 	// case 'encode':
 	// 	if(global.isDebug) console.debug('encode WAV'+recLength);
 	// 	break;
