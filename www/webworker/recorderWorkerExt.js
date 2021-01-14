@@ -92,7 +92,7 @@ global.onmessage = function(e){
 
 			} else {
 				for(i=0; i < tmpBuffer.length; i++){
-					global.record(tmpBuffer[i]);
+					global.record([tmpBuffer[i]]);
 				}
 			}
 		}
@@ -159,9 +159,9 @@ global.setConfig = function(config){
 }
 
 global.record = function(inputBuffer){
-	var len = inputBuffer.length;
+	var len = recordingBuffers.length;
 	recordingBuffers[0].push(inputBuffer[0]);
-	if(len > 1){
+	if(len > 1 && inputBuffer.length > 1){
 		recordingBuffers[1].push(inputBuffer[1]);
 		if(len > 2){
 			console.warn('RecorderWorker: can only record max. 2 channels, ignoring other '+(len-2)+' channel(s)' );
