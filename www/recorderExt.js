@@ -2,7 +2,7 @@
  * License (MIT)
  *
  * modifications:
- *	Copyright (c) 2013-2020 DFKI GmbH, Deutsches Forschungszentrum fuer Kuenstliche Intelligenz (German Research Center for Artificial Intelligence), https://www.dfki.de
+ *	Copyright (c) 2013-2021 DFKI GmbH, Deutsches Forschungszentrum fuer Kuenstliche Intelligenz (German Research Center for Artificial Intelligence), https://www.dfki.de
  *
  * based on
  *	Copyright (C) 2013 Matt Diamond (MIT License)
@@ -67,6 +67,7 @@ var Recorder = function(source, cfg){
 				cmd: 'init',
 				config: {
 					sampleRate: this.context.sampleRate,
+					targetSampleRate: config.targetSampleRate,
 					bufferSize: bufferLen,
 					channels: channels,
 					isDebug: config.debug
@@ -140,12 +141,12 @@ var Recorder = function(source, cfg){
 		}
 
 		///////////TODO MOD start
-		this.doEncode = function(){
-			worker.postMessage({ cmd: 'encode' });
+		this.doEncode = function(params){
+			worker.postMessage({ cmd: 'encode', params: params });
 		};
 
-		this.doFinish = function(){
-			worker.postMessage({ cmd: 'encClose'});
+		this.doFinish = function(params){
+			worker.postMessage({ cmd: 'encClose', params: params });
 		};
 
 		this.init = function(source){
