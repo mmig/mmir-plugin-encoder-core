@@ -224,11 +224,7 @@ global.exportWAV = function(type, forceMono){
  * @param  {String} [type] the MIME type (DEFAULT: 'audio/wav')
  */
 global.exportMonoWAV = function(type){
-	type = type || 'audio/wav';
-	var dataview = global.doEncodeWAV(true);
-	var audioBlob = new Blob([dataview], { type: type });
-
-	global.postMessage(audioBlob);
+	global.exportWAV(type, true);
 }
 
 /**
