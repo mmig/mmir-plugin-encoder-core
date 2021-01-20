@@ -2,7 +2,7 @@
 ;(function(global){
 
 var recLength = 0,
-		recBuffersL = [],
+		recordingBuffers = [],
 		sampleRate = -1,
 		channels = -1,
 		eosDetected = false,
@@ -61,10 +61,13 @@ global.onmessage = function(e) {
 
 	case 'init':
 		global.init(e.data.config);
-		encoder.encoderInit();
+		encoder.encoderInit(e.data.config);
 		break;
 	case 'config':
 		global.setConfig(e.data.config);
+		if(encoder.encoderConfig){
+			encoder.encoderConfig(e.data.config);
+		}
 		break;
 	case 'encode':
 		if(global.isDebug) console.debug('encode '+recLength);
@@ -74,10 +77,11 @@ global.onmessage = function(e) {
 		global.clear();
 		break;
 	case 'encClose':
+		var isRawResult = e.data.params && e.data.params.rawResult;
 		if(global.isDebug) console.log("encoder finish: ");
 		encoder.encoderFinish();
 		if(global.isDebug) console.log("encodedExt: "+encoder.encoded.length);
-		var data = new Blob([encoder.encoded]);
+		var data = isRawResult? encoder.encoded : new Blob([encoder.encoded]);
 		encoder.encoderCleanUp();
 		global.postMessage({cmd: 'encFinished', buf: data});
 		break;
@@ -151,7 +155,7 @@ global.setConfig = function(config){
 		targetSampleRate = config.targetSampleRate;
 		if(targetSampleRate !== sampleRate){
 			// -> create resampler instance if neccessary
-			if(!resampler || resampler.sourceSampleRate !== sampleRate || resampler.targetSampleRate !== targetSampleRate){
+			if(global.Resampler && (!resampler || resampler.sourceSampleRate !== sampleRate || resampler.targetSampleRate !== targetSampleRate)){
 				resampler = new global.Resampler(sampleRate, targetSampleRate, /*channels: currently only for mono!*/ 1, bufferSize);
 				resampler.sourceSampleRate = sampleRate;
 				resampler.targetSampleRate = targetSampleRate;
