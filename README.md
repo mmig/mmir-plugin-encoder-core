@@ -17,6 +17,7 @@ Specialized implementation modules handle integration into various speech recogn
 For encoders see
  * [mmir-plugin-encoder-amr][3]
  * [mmir-plugin-encoder-flac][4]
+ * [mmir-plugin-encoder-opus][10]
  * [mmir-plugin-encoder-speex][5]
 
 For speech service integrations see
@@ -36,3 +37,4 @@ For speech service integrations see
 [7]: https://github.com/mmig/mmir-plugin-asr-nuance-xhr
 [8]: https://github.com/mmig/mmir-plugin-asr-nuance-ws
 [9]: https://github.com/mmig/mmir-plugin-asr-nuancemix-ws
+[10]: https://github.com/mmig/mmir-plugin-encoder-opus
