@@ -30,6 +30,7 @@ function(
 				_workerImpl = {
 						'amr':  'mmir-plugin-encoder-amr',
 						'flac': 'mmir-plugin-encoder-flac',
+						'opus': 'mmir-plugin-encoder-opus',
 						'speex': 'mmir-plugin-encoder-speex',
 						'wav':  'mmir-plugin-encoder-core/workers/recorderWorkerExt'
 				};
@@ -37,6 +38,7 @@ function(
 				_workerImpl = {
 						'amr':  'amrEncoder.js',
 						'flac': 'flacEncoder.js',
+						'opus': 'opusEncoder.js',
 						'speex': 'speexEncoder.js',
 						'wav':  'recorderWorkerExt.js'
 				};
@@ -516,18 +518,16 @@ function(
 							workerImpl = _defaultWorkerImpl[_implFileName] || _defaultWorkerImpl._default;
 						} else {
 							//resolve (known) codec names to files, if necessary
-							if(/amr/i.test(workerImpl)){
-								workerImpl = _workerImpl.amr;
-							} else if(/flac/i.test(workerImpl)){
-								workerImpl = _workerImpl.flac;
-							} else if(/wav/i.test(workerImpl)){
-								workerImpl = _workerImpl.wav;
+							var codecName = workerImpl.replace(/Encoder(\.js)?$/i, '').toLowerCase();
+							if(_workerImpl[codecName]){
+								workerImpl = _workerImpl[codecName];
 							}
 						}
 
 						var channels = config.get([_pluginName, 'channelCount'], config.get([_basePluginName, 'channelCount'], 1));
+						var targetSampleRate = config.get([_pluginName, 'sampleRate'], config.get([_basePluginName, 'sampleRate'], 44100));
 						var recorderWorkerPath = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? workerImpl : consts.getWorkerPath()+workerImpl;
-						recorder = new Recorder(input, {workerPath: recorderWorkerPath, debug: _logger.isDebug(), channels: channels});
+						recorder = new Recorder(input, {workerPath: recorderWorkerPath, debug: _logger.isDebug(), channels: channels, targetSampleRate: targetSampleRate});
 					} else {
 						recorder.init(input);
 					}
