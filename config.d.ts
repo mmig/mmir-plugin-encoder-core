@@ -126,6 +126,7 @@ export interface MicrophonePluginConfigEntry {
 export enum DefaultEncoders {
   amr = 'mmir-plugin-encoder-amr',
   flac = 'mmir-plugin-encoder-flac',
+  opus = 'mmir-plugin-encoder-opus',
   speex = 'mmir-plugin-encoder-speex',
   wav = 'mmir-plugin-encoder-core/workers/recorderWorkerExt'
   //[TODO] speex = 'mmir-plugin-encoder-speex'
