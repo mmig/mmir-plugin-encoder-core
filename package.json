@@ -1,6 +1,6 @@
 {
   "name": "mmir-plugin-encoder-core",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "description": "Cordova plugin for the MMIR framework that provides core functionality for running (JavaScript) audio encoders via WebWorkers.",
   "main": "./www/webAudioInput.js",
   "directories": {
