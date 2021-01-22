@@ -111,6 +111,15 @@ module.exports = {
       }
     }
   },
+  buildConfigs: [
+    function(pluginConfig, _runtimeConfig, _pluginBuildConfigs) {
+      if(pluginConfig && pluginConfig.encoder === 'wav'){
+        return {
+          includeModules: ['mmir-plugin-encoder-core/workers/recorderWorkerExt']
+        }
+      }
+    }
+  ],
   /**
    * Known encoders:
    * can be specified via plugin-configuration
@@ -126,6 +135,7 @@ module.exports = {
   defaultEncoders: {
     wav: "mmir-plugin-encoder-core/workers/recorderWorkerExt",
     speex: "mmir-plugin-encoder-speex",
+    opus: "mmir-plugin-encoder-opus",
     flac: "mmir-plugin-encoder-flac",
     amr: "mmir-plugin-encoder-amr"
   }
