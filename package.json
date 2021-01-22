@@ -43,8 +43,9 @@
     }
   },
   "devDependencies": {
-    "mmir-lib": "^6.1.0",
-    "mmir-plugin-exports": "^2.1.1"
+    "mmir-lib": "^6.2.0",
+    "mmir-plugin-exports": "^2.3.2",
+    "mmir-tooling": "^6.2.4"
   },
   "peerDependencies": {
     "mmir-lib": ">=5"
