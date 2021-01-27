@@ -219,7 +219,7 @@
 			 * @protected
 			 * @memberOf Html5AudioInput#
 			 */
-			var _logger;
+			var _logger = mediaManager._log;// will be replaced with own instance after loading the sub-module (see initImpl())
 
 			/**  @memberOf Html5AudioInput# */
 			var audioProcessor = {
@@ -698,11 +698,11 @@
 
 					/** @memberOf Html5AudioInput.recorder# */
 					var silenceDetectionConfig = {
-							sampleRate:    input.context.sampleRate,
-							noiseTreshold: config.get([_pluginName, "silenceDetector", "noiseTreshold"], config.get(["silenceDetector", "noiseTreshold"])),
-							pauseCount:    config.get([_pluginName, "silenceDetector", "pauseCount"],    config.get(["silenceDetector", "pauseCount"])),
-							resetCount:    config.get([_pluginName, "silenceDetector", "resetCount"],    config.get(["silenceDetector", "resetCount"])),
-							bufferSize:    config.get([_pluginName, "silenceDetector", "bufferSize"],    config.get(["silenceDetector", "bufferSize"])),
+						sampleRate:    input.context.sampleRate,
+						noiseTreshold: config.get([_pluginName, "silenceDetector", "noiseTreshold"], config.get(["silenceDetector", "noiseTreshold"])),
+						pauseCount:    config.get([_pluginName, "silenceDetector", "pauseCount"],    config.get(["silenceDetector", "pauseCount"])),
+						resetCount:    config.get([_pluginName, "silenceDetector", "resetCount"],    config.get(["silenceDetector", "resetCount"])),
+						bufferSize:    config.get([_pluginName, "silenceDetector", "bufferSize"],    config.get(["silenceDetector", "bufferSize"])),
 					};
 
 					//initialize silence-detection:
@@ -715,16 +715,50 @@
 
 				}//END: onStartUserMedia
 
+				/**
+				 * @memberOf Html5AudioInput.recorder#
+				 * @type getUserMedia()
+				 */
+				var _getUserMedia;
+
 				try {
 					// unify the different kinds of HTML5 implementations
-					navigator.__getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-					//window.AudioContext = window.AudioContext || window.webkitAudioContext;
-//							audio_context = new AudioContext;
-					nonFunctional = !(AudioContext || webkitAudioContext);
-					if(!nonFunctional && navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints){
-						supportedMediaConstraints = navigator.mediaDevices.getSupportedConstraints();
+					_getUserMedia = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+					if(_getUserMedia){
+
+						nonFunctional = !((typeof AudioContext !== 'undefined') || (typeof webkitAudioContext !== 'undefined'));
+
+						if(!nonFunctional){
+
+							if(navigator.mediaDevices){
+
+								// wrap navigator.mediaDevices.getUserMedia():
+								_getUserMedia = function(constraints, onSuccess, onError){
+									navigator.mediaDevices.getUserMedia(constraints).then(onSuccess).catch(onError);
+								};
+
+								if(navigator.mediaDevices.getSupportedConstraints){
+									supportedMediaConstraints = navigator.mediaDevices.getSupportedConstraints();
+								} else {
+									supportedMediaConstraints = false;
+								}
+
+							} else {
+
+								// wrap legacy impl. navigator.getUserMedia():
+								navigator.__getUserMedia = _getUserMedia;
+								_getUserMedia = function(constraints, onSuccess, onError){
+									navigator.__getUserMedia.getUserMedia(constraints, onSuccess, onError);
+								};
+							}
+						} else {
+							_logger.error('No web audio support in this browser!');
+						}
+
 					} else {
-						supportedMediaConstraints = false;
+						_logger.error('Could not access getUserMedia() API: no access to microphone available (may not be running in through secure HTTPS connection?)');
+						nonFunctional = true;
 					}
 				}
 				catch (e) {
@@ -827,7 +861,7 @@
 
 					var onStarted = callback? function(stream){ onStartUserMedia.call(this, stream, callback); } : onStartUserMedia;
 
-					navigator.__getUserMedia({audio: getAudioConstraints()}, onStarted, function onError(e) {
+					_getUserMedia({audio: getAudioConstraints()}, onStarted, function onError(e) {
 						_logger.error('Could not access microphone: '+e);
 						if (currentFailureCallback){
 							currentFailureCallback(e);
@@ -848,7 +882,7 @@
 				var stopUserMedia = function(isStopSilenceDetection){
 
 					//set recording state to FALSE
-					recording=mediaManager.micLevelsAnalysis.active(false);
+					recording = mediaManager.micLevelsAnalysis.active(false);
 
 					//stop analyzing input
 					mediaManager.micLevelsAnalysis.stop();
@@ -1196,7 +1230,7 @@
 			};
 
 			var handleError = function(err){
-				(_logger || console).error('ERROR: failed to initialize webAudioInnput with module "'+implFile+'": '+err, err);
+				_logger.error('ERROR: failed to initialize webAudioInnput with module "'+implFile+'": '+err, err);
 				//invoke callback without exporting functions:
 				callBack({});
 			};
@@ -1215,7 +1249,7 @@
 					require([implFile], processLoaded, function(_err){
 						//try filePath as module ID instead:
 						var moduleId = implFile.replace(/\.js$/i, '');
-						(_logger? _logger : console).debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
+						_logger.debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
 						require([moduleId], processLoaded, handleError)
 					});
 				}
