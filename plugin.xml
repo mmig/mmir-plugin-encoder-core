@@ -2,7 +2,7 @@
 <plugin
     xmlns="http://cordova.apache.org/ns/plugins/1.0"
     id="mmir-plugin-encoder-core"
-    version="1.0.0-alpha.4">
+    version="1.0.0-alpha.5">
 
     <name>MMIR framwork core audio encoder</name>
 
