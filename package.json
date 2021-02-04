@@ -9,7 +9,8 @@
   "types": "index.d.ts",
   "scripts": {
     "build": "createplugincompat ./ && pluginexport ./",
-    "update:version": "updateversion ./"
+    "update:version": "updateversion ./",
+    "update:res": "copycordovascripts res/js"
   },
   "repository": {
     "type": "git",
