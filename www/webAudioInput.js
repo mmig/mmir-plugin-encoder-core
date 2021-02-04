@@ -1130,6 +1130,25 @@ function(
 						if (successCallback){
 							successCallback();
 						}
+					},
+					/**
+					 * @public
+					 * @memberOf Html5AudioInput.prototype
+					 * @see mmir.MediaManager#cancelRecognition
+					 */
+					getRecognitionLanguages: function(successCallback, failureCallback){
+
+						if(audioProcessor.getRecognitionLanguages){
+							audioProcessor.getRecognitionLanguages(successCallback, failureCallback);
+						} else {
+							var msg = 'not supported: '+_pluginName+'.getRecognitionLanguages()!';
+							if(failureCallback){
+								failureCallback(msg);
+							} else {
+								_logger.warn(msg);
+							}
+						}
+
 					}
 
 				};//END: return
