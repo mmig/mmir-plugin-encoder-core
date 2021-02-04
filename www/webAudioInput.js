@@ -381,7 +381,27 @@ function(
 					 * 					and FALSY, the message from the silence detection
 					 * 					will NOT be propagated to the encoder/recognizer.
 					 */
-					onclear: function(){}
+					onclear: function(){},
+
+					/**
+					 * OPTIONAL hook:
+					 * notifies the audioProcessor plugin that the next ASR result should be the last result
+					 * (i.e. audio recording stopped).
+					 */
+					setLastResult: function(){},
+					/**
+					 * OPTIONAL hook:
+					 * resets the "next is last result" (see {@link #setLastResult})
+					 */
+					resetLastResult: function(){},
+					/**
+					 * OPTIONAL hook:
+					 * return the "next is last result" status (see {@link #setLastResult})
+					 *
+					 * @returns {Boolean} <code>true</code> if "next is last result" is enabled
+					 */
+					isLastResult: function(){}
+
 			};
 
 			/** @memberOf Html5AudioInput# */
@@ -1012,7 +1032,7 @@ function(
 										return;
 									}
 
-									if(audioProcessor.isLastResult()) {
+									if(audioProcessor.isLastResult && audioProcessor.isLastResult()) {
 
 										if(totalText){
 											totalText = totalText + ' ' + text;
@@ -1111,6 +1131,7 @@ function(
 							successCallback();
 						}
 					}
+
 				};//END: return
 
 			};//END: htmlAudioConstructor()
