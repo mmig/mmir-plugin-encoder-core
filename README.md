@@ -21,10 +21,14 @@ For encoders see
  * [mmir-plugin-encoder-speex][5]
 
 For speech service integrations see
+ * [mmir-plugin-asr-cerence-ws][9]
  * [mmir-plugin-asr-google-xhr][6]
- * ~~[mmir-plugin-asr-nuance-xhr][7]~~ _(the Nuance speech service has been discontinued)_
- * ~~[mmir-plugin-asr-nuance-ws][8]~~ _(the Nuance speech service has been discontinued)_
- * [mmir-plugin-asr-nuancemix-ws][9]
+
+-----
+
+> __Archived:__ Outdated speech service integrations
+> * ~~[mmir-plugin-asr-nuance-xhr][7]~~ _(the Nuance speech service has been discontinued; use Cerence WS instead)_
+> * ~~[mmir-plugin-asr-nuance-ws][8]~~ _(the Nuance speech service has been discontinued; use Cerence WS instead)_
 
 
 [0]: https://github.com/mmig/mmir-plugin-encoder-core
@@ -36,5 +40,5 @@ For speech service integrations see
 [6]: https://github.com/mmig/mmir-plugin-asr-google-xhr
 [7]: https://github.com/mmig/mmir-plugin-asr-nuance-xhr
 [8]: https://github.com/mmig/mmir-plugin-asr-nuance-ws
-[9]: https://github.com/mmig/mmir-plugin-asr-nuancemix-ws
+[9]: https://github.com/mmig/mmir-plugin-asr-cerence-ws
 [10]: https://github.com/mmig/mmir-plugin-encoder-opus
