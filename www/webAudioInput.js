@@ -433,12 +433,17 @@ function(
 			var _implFileName;
 
 			/**  @memberOf Html5AudioInput# */
-			var initImpl = function(impl){
+			var initImpl = function(implFactory){
 
+				var impl = implFactory(/* pass-in the default logger: */ Logger.create() );
 				_pluginName = impl.getPluginName();
 
-				var modConf = mod.config(mod);
-				_logger = Logger.create(_pluginName, modConf? modConf.logLevel : void(0));
+				_logger = Logger.create(_pluginName + (ctxId? ':'+ctxId : ''));
+
+				if(impl.setLogger){
+					//set logger
+					impl.setLogger(_logger);
+				}
 
 				var initCalls = audioProcessor._cached;
 				audioProcessor = impl;
@@ -981,8 +986,8 @@ function(
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
 						startUserMedia(function onRecStart(){
-							audioProcessor.initRec && audioProcessor.initRec();
 							recorder && recorder.clear();
+							audioProcessor.initRec && audioProcessor.initRec();
 							audio_context && audio_context.resume();
 							recorder && recorder.record();
 							silenceDetection && silenceDetection.postMessage({cmd: 'start'});
@@ -1134,12 +1139,12 @@ function(
 					/**
 					 * @public
 					 * @memberOf Html5AudioInput.prototype
-					 * @see mmir.MediaManager#cancelRecognition
+					 * @see mmir.MediaManager#getRecognitionLanguages
 					 */
 					getRecognitionLanguages: function(successCallback, failureCallback){
 
-						if(audioProcessor.getRecognitionLanguages){
-							audioProcessor.getRecognitionLanguages(successCallback, failureCallback);
+						if(audioProcessor.getLanguageList){
+							audioProcessor.getLanguageList(successCallback, failureCallback);
 						} else {
 							var msg = 'not supported: '+_pluginName+'.getRecognitionLanguages()!';
 							if(failureCallback){
@@ -1190,16 +1195,26 @@ function(
 				var instance = htmlAudioConstructor();
 
 				//initialize implementation:
-				initImpl(newWebAudioAsrImpl);
+				try{
+					initImpl(newWebAudioAsrImpl);
+				} catch(err){
+					handleError(err);
+				}
 
 				//invoke the passed-in initializer-callback and export the public functions:
 				callBack(instance);
 			};
 
 			var handleError = function(err){
+
 				_logger.error('ERROR: failed to initialize webAudioInnput with module "'+implFile+'": '+err, err);
-				//invoke callback without exporting functions:
-				callBack({});
+
+				//invoke callback without exporting functions & non-functional information:
+				callBack({}, {
+					mod: implFile,
+					disabled: ['startRecord', 'stopRecord', 'recognize', 'cancelRecognition', 'getRecognitionLanguages'],
+					message: err
+				});
 			};
 
 			//load the necessary scripts and then call htmlAudioConstructor
