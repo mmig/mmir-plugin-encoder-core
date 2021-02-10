@@ -21,6 +21,8 @@ var speechCount = 0;
 var lastInput = 0;
 /** @memberOf SilenceDetector.prototype */
 var recording= false;
+/** @memberOf SilenceDetector.prototype */
+var isSpeech = false;
 /**
  * the lower threshold for noise (lower than this is considered "silence"), i.e.
  * the bigger, the more is counted as silent
@@ -100,6 +102,15 @@ var AUDIO_STARTED = 'Silence Detection Audio started';
  * @memberOf SilenceDetector.prototype
  */
 var SILENCE = 'Silence detected!';
+/**
+ * Fired, if some <em>noise</em> was detected for a continued duration
+ *
+ * @see .isSpeech
+ *
+ * @event SilenceDetectionPauseDetected
+ * @memberOf SilenceDetector.prototype
+ */
+var NOISE = 'Noise detected!';
 /**
  * Fired, if audio was silent for some duration of time.
  *
@@ -217,11 +228,11 @@ function _resetBuffer(){
  *				|						 |	<-["silent" blobs > silenceCount]-	|						 |
  *				|		silent	 |																			|		 noisy	 |
  *				|						 |	---["loud" blobs > speechCount]-->	|						 |
- *				|------------|																			|------------|
- *						 |																										 |
- *	[blob count > maxBlobSize]													[blob count > maxBlobSize]
- *						 |																										 |
- *						 v																										 v
+ *				|------------|									|										|------------|
+ *						 |													|													 |
+ *	[blob count > maxBlobSize]						|							[blob count > maxBlobSize]
+ *						 |													v													 |
+ *						 v										fire: NOISE											 v
  *		fire: SEND_PARTIAL																		fire: SEND_PARTIAL
  *
  * </pre>
@@ -277,20 +288,17 @@ function _isSilent(inputBuffer){
 			if (speechCount >= pauseCount){
 				silenceCount = 0;
 				++blobSizeCount;
+				if(!isSpeech){
+					_sendMessage(NOISE);
+					isSpeech = true;
+				}
 			}
 			else {
+				isSpeech = false;
 				++speechCount;
 				++lastInput;
 			}
 		}
-		// if (speechCount > pauseCount){
-		//
-		// }
-
-		//TODO convert to speech-start/-end instead of clear/silence:
-		// if (blobSizeCount === speechBlobSize){
-		// 	_sendMessage(SEND_SPEECH_STARTED);
-		// }
 
 		if (blobSizeCount >= maxBlobSize){
 			_sendMessage(SEND_PARTIAL);
@@ -318,6 +326,7 @@ function _start(){
 	speechCount = 0;
 	lastInput = 0;
 	recording = true;
+	isSpeech = false;
 	blobNumber = 0;
 	_resetBuffer();
 	_sendMessage(STARTED);
@@ -335,6 +344,9 @@ function _start(){
 function _stop(){
 	recording = false;
 	if (speechCount > 0){
+		if(!isSpeech){
+			_sendMessage(NOISE);
+		}
 		_sendMessage(SILENCE);
 		speechCount = 0;
 		silenceCount = 0;
@@ -342,6 +354,7 @@ function _stop(){
 		blobSizeCount = 0;
 		_resetBuffer();
 	}
+	isSpeech = false;
 	_sendMessage(STOPPED);
 }
 

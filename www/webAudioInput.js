@@ -609,6 +609,13 @@ function(
 								stopUserMedia();
 							}
 						}
+						else if (e.data === 'Noise detected!'){
+
+							if(audioProcessor.onnoisedetected){
+								isContinuePropagation = audioProcessor.onnoisedetected(e, textProcessor, currentFailureCallback);
+							}
+							isContinuePropagation = false;//FIXME
+						}
 						else if (e.data === 'clear'){
 
 							if(audioProcessor.onclear){
