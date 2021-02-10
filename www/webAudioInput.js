@@ -55,19 +55,24 @@ function(
 			 */
 			var _defaultWorkerImpl = {
 					'asrgooglexhr.js':   _workerImpl.flac,
-					'asrnuancews.js':   _workerImpl.speex,
-					'asrnuancexhr.js':   _workerImpl.amr,
 
+					'mmir-plugin-asr-cerence-ws.js':   _workerImpl.opus,
 					'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
-					'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
-					'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 
 					'_default':              _workerImpl.wav,
 
 					/** @deprecated */
+					'asrnuancews.js':   _workerImpl.speex,
+					/** @deprecated */
+					'asrnuancexhr.js':   _workerImpl.amr,
+					/** @deprecated */
 					'webasratntimpl.js':     _workerImpl.amr,
 					/** @deprecated */
-					'webasrgooglev1impl.js': _workerImpl.wav
+					'webasrgooglev1impl.js': _workerImpl.wav,
+					/** @deprecated */
+					'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
+					/** @deprecated */
+					'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 			};
 
 			/**
@@ -814,7 +819,7 @@ function(
 					var onStarted = callback? function(stream){ onStartUserMedia.call(this, stream, callback); } : onStartUserMedia;
 
 					_getUserMedia({audio: getAudioConstraints()}, onStarted, function onError(e) {
-						_logger.error('Could not access microphone: '+e);
+						_logger.error('Could not access microphone: '+e, e);
 						if (currentFailureCallback){
 							currentFailureCallback(e);
 						}
@@ -1051,7 +1056,7 @@ function(
 									audioProcessor.resetLastResult && audioProcessor.resetLastResult();
 								};
 							}
-							audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, {});
+							audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
 							audioProcessor.setLastResult && audioProcessor.setLastResult();
 
