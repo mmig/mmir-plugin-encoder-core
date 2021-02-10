@@ -52,7 +52,7 @@
 
     <!-- (microphone) recorder / controller for WebWorker encoders: -->
     <asset
-        src="www/recorderExt.js"
-        target="mmirf/env/media/recorderExt.js" />
+        src="www/voiceRecorder.js"
+        target="mmirf/env/media/voiceRecorder.js" />
 
 </plugin>

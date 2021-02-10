@@ -1,6 +1,6 @@
 
 define(
-['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './recorderExt.js'],
+['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './voiceRecorder.js'],
 function(
 		mediaManager, config, consts, Logger, require, mod, Recorder
 ){

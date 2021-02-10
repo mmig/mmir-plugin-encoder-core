@@ -74,7 +74,7 @@
 	
   return {initialize: function (){
     var origArgs = arguments;
-    require(['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './recorderExt.js'], function (mediaManager, config, consts, Logger, require, mod, Recorder){
+    require(['mmirf/mediaManager', 'mmirf/configurationManager', 'mmirf/resources', 'mmirf/logger', 'require', 'module', './voiceRecorder.js'], function (mediaManager, config, consts, Logger, require, mod, Recorder){
     var origInit = (function(){
       {
 
@@ -128,19 +128,24 @@
 			 */
 			var _defaultWorkerImpl = {
 					'asrgooglexhr.js':   _workerImpl.flac,
-					'asrnuancews.js':   _workerImpl.speex,
-					'asrnuancexhr.js':   _workerImpl.amr,
 
+					'mmir-plugin-asr-cerence-ws.js':   _workerImpl.opus,
 					'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
-					'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
-					'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 
 					'_default':              _workerImpl.wav,
 
 					/** @deprecated */
+					'asrnuancews.js':   _workerImpl.speex,
+					/** @deprecated */
+					'asrnuancexhr.js':   _workerImpl.amr,
+					/** @deprecated */
 					'webasratntimpl.js':     _workerImpl.amr,
 					/** @deprecated */
-					'webasrgooglev1impl.js': _workerImpl.wav
+					'webasrgooglev1impl.js': _workerImpl.wav,
+					/** @deprecated */
+					'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
+					/** @deprecated */
+					'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 			};
 
 			/**
@@ -454,7 +459,27 @@
 					 * 					and FALSY, the message from the silence detection
 					 * 					will NOT be propagated to the encoder/recognizer.
 					 */
-					onclear: function(){}
+					onclear: function(){},
+
+					/**
+					 * OPTIONAL hook:
+					 * notifies the audioProcessor plugin that the next ASR result should be the last result
+					 * (i.e. audio recording stopped).
+					 */
+					setLastResult: function(){},
+					/**
+					 * OPTIONAL hook:
+					 * resets the "next is last result" (see {@link #setLastResult})
+					 */
+					resetLastResult: function(){},
+					/**
+					 * OPTIONAL hook:
+					 * return the "next is last result" status (see {@link #setLastResult})
+					 *
+					 * @returns {Boolean} <code>true</code> if "next is last result" is enabled
+					 */
+					isLastResult: function(){}
+
 			};
 
 			/** @memberOf Html5AudioInput# */
@@ -486,12 +511,17 @@
 			var _implFileName;
 
 			/**  @memberOf Html5AudioInput# */
-			var initImpl = function(impl){
+			var initImpl = function(implFactory){
 
+				var impl = implFactory(/* pass-in the default logger: */ Logger.create() );
 				_pluginName = impl.getPluginName();
 
-				var modConf = mod.config(mod);
-				_logger = Logger.create(_pluginName, modConf? modConf.logLevel : void(0));
+				_logger = Logger.create(_pluginName + (ctxId? ':'+ctxId : ''));
+
+				if(impl.setLogger){
+					//set logger
+					impl.setLogger(_logger);
+				}
 
 				var initCalls = audioProcessor._cached;
 				audioProcessor = impl;
@@ -651,6 +681,13 @@
 
 								stopUserMedia();
 							}
+						}
+						else if (e.data === 'Noise detected!'){
+
+							if(audioProcessor.onnoisedetected){
+								isContinuePropagation = audioProcessor.onnoisedetected(e, textProcessor, currentFailureCallback);
+							}
+							isContinuePropagation = false;//FIXME
 						}
 						else if (e.data === 'clear'){
 
@@ -862,7 +899,7 @@
 					var onStarted = callback? function(stream){ onStartUserMedia.call(this, stream, callback); } : onStartUserMedia;
 
 					_getUserMedia({audio: getAudioConstraints()}, onStarted, function onError(e) {
-						_logger.error('Could not access microphone: '+e);
+						_logger.error('Could not access microphone: '+e, e);
 						if (currentFailureCallback){
 							currentFailureCallback(e);
 						}
@@ -1034,8 +1071,8 @@
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
 						startUserMedia(function onRecStart(){
-							audioProcessor.initRec && audioProcessor.initRec();
 							recorder && recorder.clear();
+							audioProcessor.initRec && audioProcessor.initRec();
 							audio_context && audio_context.resume();
 							recorder && recorder.record();
 							silenceDetection && silenceDetection.postMessage({cmd: 'start'});
@@ -1085,7 +1122,7 @@
 										return;
 									}
 
-									if(audioProcessor.isLastResult()) {
+									if(audioProcessor.isLastResult && audioProcessor.isLastResult()) {
 
 										if(totalText){
 											totalText = totalText + ' ' + text;
@@ -1099,7 +1136,7 @@
 									audioProcessor.resetLastResult && audioProcessor.resetLastResult();
 								};
 							}
-							audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, {});
+							audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
 							audioProcessor.setLastResult && audioProcessor.setLastResult();
 
@@ -1183,7 +1220,27 @@
 						if (successCallback){
 							successCallback();
 						}
+					},
+					/**
+					 * @public
+					 * @memberOf Html5AudioInput.prototype
+					 * @see mmir.MediaManager#getRecognitionLanguages
+					 */
+					getRecognitionLanguages: function(successCallback, failureCallback){
+
+						if(audioProcessor.getLanguageList){
+							audioProcessor.getLanguageList(successCallback, failureCallback);
+						} else {
+							var msg = 'not supported: '+_pluginName+'.getRecognitionLanguages()!';
+							if(failureCallback){
+								failureCallback(msg);
+							} else {
+								_logger.warn(msg);
+							}
+						}
+
 					}
+
 				};//END: return
 
 			};//END: htmlAudioConstructor()
@@ -1223,16 +1280,26 @@
 				var instance = htmlAudioConstructor();
 
 				//initialize implementation:
-				initImpl(newWebAudioAsrImpl);
+				try{
+					initImpl(newWebAudioAsrImpl);
+				} catch(err){
+					handleError(err);
+				}
 
 				//invoke the passed-in initializer-callback and export the public functions:
 				callBack(instance);
 			};
 
 			var handleError = function(err){
+
 				_logger.error('ERROR: failed to initialize webAudioInnput with module "'+implFile+'": '+err, err);
-				//invoke callback without exporting functions:
-				callBack({});
+
+				//invoke callback without exporting functions & non-functional information:
+				callBack({}, {
+					mod: implFile,
+					disabled: ['startRecord', 'stopRecord', 'recognize', 'cancelRecognition', 'getRecognitionLanguages'],
+					message: err
+				});
 			};
 
 			//load the necessary scripts and then call htmlAudioConstructor

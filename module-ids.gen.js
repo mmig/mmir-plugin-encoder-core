@@ -7,12 +7,12 @@
 var _id = "mmir-plugin-encoder-core";
 var _paths = {
   "mmir-plugin-encoder-core/encoder": "www/encoder.js",
-  "mmir-plugin-encoder-core/recorderExt": "www/recorderExt.js",
   "mmir-plugin-encoder-core/resampler": "www/resampler.js",
   "mmir-plugin-encoder-core/silenceDetector": "www/silenceDetector.js",
+  "mmir-plugin-encoder-core/voiceRecorder": "www/voiceRecorder.js",
   "mmir-plugin-encoder-core/webAudioInput": "www/webAudioInput.js",
-  "mmir-plugin-encoder-core/recorderExtCompat": "www/alt/recorderExtCompat.js",
-  "mmir-plugin-encoder-core/recorderExtWebpack": "www/alt/recorderExtWebpack.js",
+  "mmir-plugin-encoder-core/voiceRecorderCompat": "www/alt/voiceRecorderCompat.js",
+  "mmir-plugin-encoder-core/voiceRecorderWebpack": "www/alt/voiceRecorderWebpack.js",
   "mmir-plugin-encoder-core/webAudioInputCompat": "www/alt/webAudioInputCompat.js",
   "mmir-plugin-encoder-core/webAudioInputWebpack": "www/alt/webAudioInputWebpack.js",
   "mmir-plugin-encoder-core/workers/recorderWorkerExt": "www/webworker/recorderWorkerExt.js",

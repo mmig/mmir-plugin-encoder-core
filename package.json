@@ -36,8 +36,8 @@
         "file": "./www/alt/webAudioInputCompat.js",
         "type": "media"
       },
-      "./www/recorderExt.js": {
-        "file": "./www/alt/recorderExtCompat.js",
+      "./www/voiceRecorder.js": {
+        "file": "./www/alt/voiceRecorderCompat.js",
         "type": "custom",
         "exportedName": "Recorder"
       }
