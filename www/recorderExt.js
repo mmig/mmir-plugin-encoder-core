@@ -12,9 +12,9 @@
 
 define(function(){
 
-var WORKER_PATH = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-plugin-encoder-core/workers/recorderWorkerExt' : 'mmirf/workers/recorderWorkerExt.js';
+	var WORKER_PATH = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? 'mmir-plugin-encoder-core/workers/recorderWorkerExt' : 'mmirf/workers/recorderWorkerExt.js';
 
-var Recorder = function(source, cfg){
+	var Recorder = function Recorder(source, cfg){
 		var config = cfg || {};
 		var bufferLen = config.bufferLen || 4096;
 		var channels = config.channels || 2;
@@ -63,15 +63,14 @@ var Recorder = function(source, cfg){
 
 			this.node.onaudioprocess = doRecordAudio;
 
+			var initConfig = Object.assign({}, config, {
+				bufferSize: bufferLen,
+				channels: channels
+			});
+
 			worker.postMessage({
 				cmd: 'init',
-				config: {
-					sampleRate: this.context.sampleRate,
-					targetSampleRate: config.targetSampleRate,
-					bufferSize: bufferLen,
-					channels: channels,
-					isDebug: config.debug
-				}
+				config: initConfig
 			});
 
 			inputSource.connect(this.node);
@@ -188,7 +187,7 @@ var Recorder = function(source, cfg){
 
 
 			if(e.data instanceof DataView){
-				if(config.isDebug) console.info('received DataView from worker');
+				if(config.debug) console.info('received DataView from worker');
 				currCallback(e.data);
 				return;
 			}

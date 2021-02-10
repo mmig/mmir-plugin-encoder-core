@@ -40,7 +40,7 @@ global.getMergedBufferLength = function(bufferList){
 }
 
 global.mergeBuffersUint = function(channelBuffer, recordingLength){
-	recordingLength = getMergedBufferLength(channelBuffer);
+	recordingLength = recordingLength > 0? recordingLength : getMergedBufferLength(channelBuffer);
 	var result = new Uint8Array(recordingLength);
 	var offset = 0;
 	var lng = channelBuffer.length;
@@ -149,7 +149,7 @@ global.init = function(config){
 
 global.setConfig = function(config){
 	if(typeof config.isDebug !== 'undefined'){
-		global.isDebug = config.isDebug;
+		global.isDebug = config.debug;
 	}
 	if(typeof config.targetSampleRate !== 'undefined'){
 		targetSampleRate = config.targetSampleRate;
