@@ -134,7 +134,7 @@ global.init = function(config){
 
 global.setConfig = function(config){
 	if(typeof config.isDebug !== 'undefined'){
-		global.isDebug = config.isDebug;
+		global.isDebug = config.debug;
 	}
 	if(typeof config.targetSampleRate !== 'undefined'){
 		targetSampleRate = config.targetSampleRate;
