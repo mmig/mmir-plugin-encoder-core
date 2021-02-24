@@ -25,8 +25,8 @@
 
     <!-- basic WebWorker recorder (for recording PCM/WAV): -->
     <asset
-        src="www/webworker/recorderWorkerExt.js"
-        target="mmirf/workers/recorderWorkerExt.js" />
+        src="www/webworker/wavEncoder.js"
+        target="mmirf/workers/wavEncoder.js" />
 
     <!-- base encoder core file (for use in WebWorker)
         (NOTE: requires some additional files/modules that are included in the MMIR framework)
@@ -54,5 +54,27 @@
     <asset
         src="www/voiceRecorder.js"
         target="mmirf/env/media/voiceRecorder.js" />
+
+
+    <!-- ############ backwards compatiblity code / modules ###############  -->
+
+    <!--
+        backwards compatiblity modules and wrapper for webAudioInput.js
+        (will be empty/unsed in non-"compat" mode; see hook res/js/before_plugin_install_hook.js above)
+    -->
+    <asset
+        src="www/legacyWebAudioInput.js"
+        target="mmirf/env/media/legacyWebAudioInput.js" />
+
+    <!--
+        backwards compatiblity modules and wrapper for voiceRecorder.js
+        (will be empty/unused in non-"compat" mode; see hook res/js/before_plugin_install_hook.js above)
+    -->
+    <asset
+        src="www/legacyVoiceRecorder.js"
+        target="mmirf/env/media/legacyVoiceRecorder.js" />
+    <asset
+        src="www/eventEmitter.js"
+        target="mmirf/env/media/eventEmitter.js" />
 
 </plugin>

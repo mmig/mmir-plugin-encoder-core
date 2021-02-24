@@ -7,10 +7,98 @@ function(
 
 	return {
 		/**  @memberOf Html5AudioInput# */
-		initialize: function(callBack, __mediaManager, ctxId, moduleConfig){
+		initialize: function(callBack, ctxId, moduleConfig){
 
 			/**  @memberOf Html5AudioInput# */
 			var _basePluginName = 'webAudioInput';
+
+			/**
+			 * Will be set when specific implementation is initialized.
+			 *
+			 * @type mmir.Logger
+			 * @protected
+			 * @memberOf Html5AudioInput#
+			 */
+			var _logger = mediaManager._log;// will be replaced with own instance after loading the sub-module (see initImpl())
+
+			/** @memberOf Html5AudioInput#
+			 * @type MediaTrackSupportedConstraints | boolean
+			 */
+			var supportedMediaConstraints = false;
+
+			/** @memberOf Html5AudioInput# */
+			var nonFunctional = true;
+
+			/**
+			 * @memberOf Html5AudioInput#
+			 * @type getUserMedia()
+			 */
+			var _getUserMedia;
+
+			try {
+				// unify the different kinds of HTML5 implementations
+				_getUserMedia = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+				if(_getUserMedia){
+
+					nonFunctional = !((typeof AudioContext !== 'undefined') || (typeof webkitAudioContext !== 'undefined'));
+
+					if(!nonFunctional){
+
+						if(navigator.mediaDevices){
+
+							// wrap navigator.mediaDevices.getUserMedia():
+							_getUserMedia = function(constraints, onSuccess, onError){
+								navigator.mediaDevices.getUserMedia(constraints).then(onSuccess).catch(onError);
+							};
+
+							if(navigator.mediaDevices.getSupportedConstraints){
+								supportedMediaConstraints = navigator.mediaDevices.getSupportedConstraints();
+							} else {
+								supportedMediaConstraints = false;
+							}
+
+						} else {
+
+							// wrap legacy impl. navigator.getUserMedia():
+							navigator.__getUserMedia = _getUserMedia;
+							_getUserMedia = function(constraints, onSuccess, onError){
+								navigator.__getUserMedia.getUserMedia(constraints, onSuccess, onError);
+							};
+						}
+
+					} else {
+						_logger.error('<webAudioInput'+(ctxId? ':'+ctxId : '')+'>: No web audio support in this browser!');
+					}
+
+				} else {
+					_logger.error('<webAudioInput'+(ctxId? ':'+ctxId : '')+'>: Could not access getUserMedia() API: no access to microphone available (may not be running in through secure HTTPS connection?)');
+					nonFunctional = true;
+				}
+
+			} catch (err) {
+				_logger.error('<webAudioInput'+(ctxId? ':'+ctxId : '')+'>: No web audio support in this browser!', err);
+				nonFunctional = true;
+				supportedMediaConstraints = false;
+				currentFailureCallback && currentFailureCallback(err);
+			}
+
+			if (nonFunctional) {
+
+				//FIXME this error message is a quick an dirty hack -- there should be a more general way for defining the error message...
+				var msg = 'Unfortunately, your internet browser'
+					+'\ndoes not support access to the microphone.'
+					+'\n\nPlease use a more current version of your '
+					+'\nbrowser, or verify that your access is through'
+					+'\na secure connection (e.g. HTTPS).';
+
+				callBack({}, {
+					mod: _pluginName,
+					disabled: ['startRecord', 'stopRecord', 'recognize', 'cancelRecognition', 'getRecognitionLanguages'],
+					message: msg
+				});
+				return;///////////////////////////// EARLY EXIT //////////////////////////////
+			}
 
 			/**
 			 * Default implementation for WebAudioInput: Google Recognition Web Service v1
@@ -32,7 +120,7 @@ function(
 						'flac': 'mmir-plugin-encoder-flac',
 						'opus': 'mmir-plugin-encoder-opus',
 						'speex': 'mmir-plugin-encoder-speex',
-						'wav':  'mmir-plugin-encoder-core/workers/recorderWorkerExt'
+						'wav':  'mmir-plugin-encoder-core/workers/wavEncoder'
 				};
 			} else {
 				_workerImpl = {
@@ -40,7 +128,7 @@ function(
 						'flac': 'flacEncoder.js',
 						'opus': 'opusEncoder.js',
 						'speex': 'speexEncoder.js',
-						'wav':  'recorderWorkerExt.js'
+						'wav':  'wavEncoder.js'
 				};
 			}
 
@@ -54,26 +142,35 @@ function(
 			 * @memberOf Html5AudioInput#
 			 */
 			var _defaultWorkerImpl = {
+					'_default':          _workerImpl.wav,
+
+					'asrcerencews.js':   _workerImpl.opus,
 					'asrgooglexhr.js':   _workerImpl.flac,
 
 					'mmir-plugin-asr-cerence-ws.js':   _workerImpl.opus,
 					'mmir-plugin-asr-google-xhr.js':   _workerImpl.flac,
 
-					'_default':              _workerImpl.wav,
-
-					/** @deprecated */
-					'asrnuancews.js':   _workerImpl.speex,
-					/** @deprecated */
-					'asrnuancexhr.js':   _workerImpl.amr,
-					/** @deprecated */
-					'webasratntimpl.js':     _workerImpl.amr,
-					/** @deprecated */
-					'webasrgooglev1impl.js': _workerImpl.wav,
-					/** @deprecated */
-					'mmir-plugin-asr-nuance-ws.js':   _workerImpl.speex,
-					/** @deprecated */
-					'mmir-plugin-asr-nuance-xhr.js':   _workerImpl.amr,
 			};
+
+			// NOTE legacyWebAudioInput will be injected in compatibility module
+			if(typeof legacyWebAudioInput !== 'undefined'){
+				legacyWebAudioInput.addCompatibilityModuleMappings(_defaultWorkerImpl, _workerImpl);
+			}
+
+			/**
+			 * list of automatically attached recording / detection events
+			 * ("attached": if plugin implementation exposes a hook for one of these, it is automatically attached to the voice-recorder as-is)
+			 * @memberOf Html5AudioInput#
+			 */
+			var _pluginEventNames = [
+				// recorder events
+				'oninitialized', 'onstart', 'onstop', 'onerror', // /* not yet supported: */ 'onpause', 'onresume'
+				// detection events
+				'ondetectionstart', 'ondetectionend', 'onsilent', 'onoverflow', // /* treated manually: */ , 'ondetectioninitialized'
+				// speech/noise detection events
+				// NOTE:omitted here, since they need special treatment w.r.t. whether recorder.canDetectSpeech is true or false
+				// 'onspeechstart', 'onspeechend', 'onsoundstart', 'onsoundend',
+			];
 
 			/**
 			 * Result types for recognition / text callbacks
@@ -83,12 +180,12 @@ function(
 			 * @memberOf Html5AudioInput#
 			 */
 			var RESULT_TYPES = {
-					"FINAL": 				"FINAL",
-					"INTERIM": 				"INTERIM",
-					"INTERMEDIATE":			"INTERMEDIATE",
-					"RECOGNITION_ERROR": 	"RECOGNITION_ERROR",
-					"RECORDING_BEGIN": 		"RECORDING_BEGIN",
-					"RECORDING_DONE": 		"RECORDING_DONE"
+				'FINAL': 							'FINAL',
+				'INTERIM': 						'INTERIM',
+				'INTERMEDIATE':				'INTERMEDIATE',
+				'RECOGNITION_ERROR': 	'RECOGNITION_ERROR',
+				'RECORDING_BEGIN': 		'RECORDING_BEGIN',
+				'RECORDING_DONE': 		'RECORDING_DONE'
 			};
 
 			/**
@@ -123,16 +220,14 @@ function(
 			 * @private
 			 * @memberOf Html5AudioInput#
 			 */
-			var _doEmitEvent = mediaManager._emitEvent? function(_eventName, _args) {
-					mediaManager._emitEvent.apply(mediaManager, arguments)
-				} : function(eventName, _args) {
-					var size = arguments.length;
-					var argList = new Array(size - 1);
-					for(var i = 1; i < size; ++i){
-						argList[i - 1] = arguments[i];
-					}
-					mediaManager._fireEvent(eventName, argList);
+			var _doEmitEvent = function(_eventName, _args) {
+				mediaManager._emitEvent.apply(mediaManager, arguments)
 			};
+
+			// NOTE legacyWebAudioInput will be injected in compatibility module
+			if(typeof legacyWebAudioInput !== 'undefined'){
+				_doEmitEvent = legacyWebAudioInput.createMediaManagerEventEmitter(_doEmitEvent, mediaManager);
+			}
 
 			/**
 			 * STREAM_STARTED: Name for the event that is emitted, when
@@ -145,277 +240,11 @@ function(
 			var STREAM_STARTED_EVT_NAME = 'webaudioinputstarted';
 
 			/**
-			 * Will be set when specific implementation is initialized.
-			 *
-			 * @type mmir.Logger
-			 * @protected
+			 * The instance of the plugin implemenation (will be loaded below)
+			 * @type {mmir.env.media.AudioASRPlugin}
 			 * @memberOf Html5AudioInput#
 			 */
-			var _logger = mediaManager._log;// will be replaced with own instance after loading the sub-module (see initImpl())
-
-			/**  @memberOf Html5AudioInput# */
-			var audioProcessor = {
-					/**
-					 * Initializes the connection/send-function.
-					 *
-					 * MUST be set/"overwritten" by specific implementation.
-					 *
-					 * @param {Function} stopUserMediaFunc
-					 * 			the function that will stop the user-media ("close microphone")
-					 *
-					 * @protected
-					 * @memberOf Html5AudioInput.AudioProcessor#
-					 */
-					_init: function(_stopUserMediaFunc){
-
-						//NOTE _init may get called before audioProcessor impl. is loaded
-						//     -> cache these invocation and apply them later, when audioProcessor is loaded
-						if(!this._cached){
-							this._cached = [];
-						}
-
-						this._cached.push(arguments);
-					},
-					/**
-					 * Hook that initializes the audio processor's callback functions and settings.
-					 *
-					 * This function is called, before opening the microphone,
-					 * starting the recognition process etc.
-					 *
-					 *
-					 * MUST be set/"overwritten" by specific implementation.
-					 *
-					 *
-					 * @param {Function} successCallback
-					 * 			callback will be called by the sendData-implementation
-					 * 			when sending was successful.
-					 * 				<pre>
-					 * 				successCallback(
-					 * 					text: String | "",
-					 * 					confidence: Number | Void,
-					 * 					status: "FINAL"|"INTERIM"|"INTERMEDIATE",
-					 * 					alternatives: Array<{result: String, score: Number}> | Void,
-					 * 					unstable: String | Void
-					 * 				)
-					 * 				</pre>
-					 *
-					 * @param {Function} failureCallback
-					 * 			callback will be called by the sendData-implementation
-					 * 			if an error occurred:
-					 * 				<pre>
-					 * 					failureCallback(error)
-					 * 				</pre>
-					 *
-					 * @param {Function} stopUserMediaFunc
-					 * 			the function that will stop the user-media ("close microphone")
-					 *
-					 * @param {PlainObject} options
-					 * 			options for Automatic Speech Recognition:
-					 * 			<pre>{
-					 * 				  success: OPTIONAL Function, the status-callback (see arg successCallback)
-					 * 				, error: OPTIONAL Function, the error callback (see arg failureCallback)
-					 * 				, language: OPTIONAL String, the language for recognition (if omitted, the current language setting is used)
-					 * 				, intermediate: OTPIONAL Boolean, set true for receiving intermediate results (NOTE not all ASR engines may support intermediate results)
-					 * 				, results: OTPIONAL Number, set how many recognition alternatives should be returned at most (NOTE not all ASR engines may support this option)
-					 * 				, mode: OTPIONAL "search" | "dictation", set how many recognition alternatives should be returned at most (NOTE not all ASR engines may support this option)
-					 * 				, eosPause: OTPIONAL "short" | "long", length of pause after speech for end-of-speech detection (NOTE not all ASR engines may support this option)
-					 * 				, disableImprovedFeedback: OTPIONAL Boolean, disable improved feedback when using intermediate results (NOTE not all ASR engines may support this option)
-					 * 			}</pre>
-					 *
-					 */
-					setCallbacks: function(successCallback, failureCallback, stopUserMediaFunc, options){},
-					/**
-					 * Initializes/prepares the next recognition session.
-					 *
-					 * MUST be set/"overwritten" by specific implementation.
-					 *
-					 * @protected
-					 * @memberOf Html5AudioInput.AudioProcessor#
-					 */
-					initRec: function(){},
-					/**
-					 * Hook that is called, when audio data was encoded.
-					 *
-					 * Implementation should send the data to the recognition-service,
-					 * and call <code>successCallback</code> with the recognition results.
-					 *
-					 * MUST be set/"overwritten" by specific implementation.
-					 *
-					 * @param {any} audioData
-					 * 			the (binary) audio data (e.g. PCM, FLAC, ...)
-					 *
-					 * @param {Function} successCallback
-					 * 			callback will be called by the sendData-implementation
-					 * 			when sending was successful.
-					 * 				<pre>
-					 * 				successCallback(
-					 * 					text: String | "",
-					 * 					confidence: Number | Void,
-					 * 					status: "FINAL"|"INTERIM"|"INTERMEDIATE",
-					 * 					alternatives: Array<{result: String, score: Number}> | Void,
-					 * 					unstable: String | Void
-					 * 				)
-					 * 				</pre>
-					 *
-					 * @param {Function} failureCallback
-					 * 			callback will be called by the sendData-implementation
-					 * 			if an error occurred:
-					 * 				<pre>
-					 * 					failureCallback(error)
-					 * 				</pre>
-					 *
-					 * @memberOf Html5AudioInput.AudioProcessor#
-					 *
-					 * @see mmir.MediaManager#recognize
-					 * @see mmir.MediaManager#startRecord
-					 */
-					sendData: function(audioData, successCallback, failureCallback){},
-					/**
-					 * CAN be set/"overwritten" by specific implementation:
-					 * callback that is invoked when silence detection was <code>initialized</code>.
-					 *
-					 * @param {PlainObject} message
-					 * 			the message from the silence detection
-					 * @param {Function} successCallback
-					 * 			the success callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 * @param {Function} failureCallback
-					 * 			the error callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 *
-					 * @returns {any} if the returned values is not <code>undefined</code>
-					 * 					and FALSY, the message from the silence detection
-					 * 					will NOT be propagated to the encoder/recognizer.
-					 */
-					oninit: function(message, successCallback, failureCallback){},
-					/**
-					 * CAN be set/"overwritten" by specific implementation:
-					 * callback that is invoked when silence detection was <code>started</code>.
-					 *
-					 * @param {PlainObject} message
-					 * 			the message from the silence detection
-					 * @param {Function} successCallback
-					 * 			the success callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 * @param {Function} failureCallback
-					 * 			the error callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 *
-					 * @returns {any} if the returned values is not <code>undefined</code>
-					 * 					and FALSY, the message from the silence detection
-					 * 					will NOT be propagated to the encoder/recognizer.
-					 */
-					onstarted: function(){},
-					/**
-					 * CAN be set/"overwritten" by specific implementation:
-					 * callback that is invoked when silence detection was <code>stopped</code>.
-					 *
-					 * @param {PlainObject} message
-					 * 			the message from the silence detection
-					 * @param {Function} successCallback
-					 * 			the success callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 * @param {Function} failureCallback
-					 * 			the error callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 *
-					 * @returns {any} if the returned values is not <code>undefined</code>
-					 * 					and FALSY, the message from the silence detection
-					 * 					will NOT be propagated to the encoder/recognizer.
-					 */
-					onstopped: function(){},
-					/**
-					 * CAN be set/"overwritten" by specific implementation:
-					 * callback that is invoked when silence detection signaled <code>send partial result</code>,
-					 * i.e. that there is still some speech/noise, but the size limit (for sending audio
-					 * data to the recognition service within one request ) is reached, so the audio
-					 * data should be sent now.
-					 *
-					 * TODO remove
-					 * @deprecated
-					 *
-					 * @param {PlainObject} message
-					 * 			the message from the silence detection
-					 * @param {Function} successCallback
-					 * 			the success callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 * @param {Function} failureCallback
-					 * 			the error callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 *
-					 * @returns {any} if the returned values is not <code>undefined</code>
-					 * 					and FALSY, the message from the silence detection
-					 * 					will NOT be propagated to the encoder/recognizer.
-					 */
-					onsendpart: function(){},
-					/**
-					 * CAN be set/"overwritten" by specific implementation:
-					 * callback that is invoked when silence detection signaled <code>silence detected</code>,
-					 * i.e. that there was some speech/noise, and now it is silent again ("end of noise detected").
-					 *
-					 * @param {PlainObject} message
-					 * 			the message from the silence detection
-					 * @param {Function} successCallback
-					 * 			the success callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 * @param {Function} failureCallback
-					 * 			the error callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 *
-					 * @returns {any} if the returned values is not <code>undefined</code>
-					 * 					and FALSY, the message from the silence detection
-					 * 					will NOT be propagated to the encoder/recognizer.
-					 */
-					onsilencedetected: function(){},
-					/**
-					 * CAN be set/"overwritten" by specific implementation:
-					 * callback that is invoked when silence detection signaled <code>clear data</code>,
-					 * i.e. that the audio was silent since the last message, thus the audio data
-					 * can be dropped (i.e. not sent to the recognition service).
-					 *
-					 * @param {PlainObject} message
-					 * 			the message from the silence detection
-					 * @param {Function} successCallback
-					 * 			the success callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 * @param {Function} failureCallback
-					 * 			the error callback for the recognition
-					 * 			(<code>recognize()</code> or <code>startRecord()</code>)
-					 *
-					 * @returns {any} if the returned values is not <code>undefined</code>
-					 * 					and FALSY, the message from the silence detection
-					 * 					will NOT be propagated to the encoder/recognizer.
-					 */
-					onclear: function(){},
-
-					/**
-					 * OPTIONAL hook:
-					 * notifies the audioProcessor plugin that the next ASR result should be the last result
-					 * (i.e. audio recording stopped).
-					 */
-					setLastResult: function(){},
-					/**
-					 * OPTIONAL hook:
-					 * resets the "next is last result" (see {@link #setLastResult})
-					 */
-					resetLastResult: function(){},
-					/**
-					 * OPTIONAL hook:
-					 * return the "next is last result" status (see {@link #setLastResult})
-					 *
-					 * @returns {Boolean} <code>true</code> if "next is last result" is enabled
-					 */
-					isLastResult: function(){}
-
-			};
-
-			/** @memberOf Html5AudioInput# */
-			var nonFunctional = true;
-
-			/** @memberOf Html5AudioInput#
-			 * @type MediaTrackSupportedConstraints | boolean
-			 */
-			var supportedMediaConstraints = false;
+			var audioProcessor;
 
 			/**
 			 * The name of the plugin (w.r.t. the specific implementation).
@@ -438,9 +267,9 @@ function(
 			var _implFileName;
 
 			/**  @memberOf Html5AudioInput# */
-			var initImpl = function(implFactory){
+			var initImpl = function(implFactory, /*FIXME remove arg*/ stopUserMedia){
 
-				var impl = implFactory(/* pass-in the default logger: */ Logger.create() );
+				var impl = implFactory(stopUserMedia, /* pass-in the default logger: */ Logger.create() );
 				_pluginName = impl.getPluginName();
 
 				_logger = Logger.create(_pluginName + (ctxId? ':'+ctxId : ''));
@@ -450,17 +279,12 @@ function(
 					impl.setLogger(_logger);
 				}
 
-				var initCalls = audioProcessor._cached;
 				audioProcessor = impl;
 
-				//if there were init-calls before impl was loaded, apply them now:
-				if(initCalls){
-
-					for(var i=0,size=initCalls.length; i < size; ++i){
-						audioProcessor._init.apply(audioProcessor, initCalls[i]);
-					}
+				// NOTE legacyWebAudioInput will be injected in compatibility module
+				if(typeof legacyWebAudioInput !== 'undefined'){
+					legacyWebAudioInput.addCompatibilityLayer(audioProcessor, stopUserMedia);
 				}
-
 			};
 
 			/** @memberOf Html5AudioInput# */
@@ -472,8 +296,9 @@ function(
 				 */
 				var recording = false;
 
-				/** @memberOf Html5AudioInput# */
-				var isUseIntermediateResults = false;
+				// /** @memberOf Html5AudioInput# */
+				// var isUseIntermediateResults = false;
+
 				/**
 				 * @type AudioContext
 				 * @memberOf Html5AudioInput#
@@ -488,7 +313,7 @@ function(
 				 * @type RecorderExt
 				 * @memberOf Html5AudioInput#
 				 */
-				var recorder=null;
+				var recorder = null;
 				/** @memberOf Html5AudioInput# */
 				var totalText = '';
 				/**
@@ -496,13 +321,12 @@ function(
 				 * @memberOf Html5AudioInput#
 				 */
 				var textProcessor = function(text, confidence, status, alternatives, unstable){};
+
 				/**
-				 * @type WebWorker
+				 * flag if currently active recognition should be stopped upon end-of-speech detection
+				 * (i.e. if recoginer() was called)
 				 * @memberOf Html5AudioInput#
 				 */
-				var silenceDetection = null;
-
-				/** @memberOf Html5AudioInput# */
 				var endOfSpeechDetection = false;
 				/**
 				 * @type Function
@@ -541,7 +365,16 @@ function(
 						mediaManager.micLevelsAnalysis.start({inputSource: input, audioContext: audio_context});
 					}
 
+					var silenceDetectionConfig = {
+						sampleRate:    input.context.sampleRate,
+						noiseTreshold: config.get([_pluginName, 'silenceDetector', 'noiseTreshold'], config.get(['silenceDetector', 'noiseTreshold'])),
+						pauseCount:    config.get([_pluginName, 'silenceDetector', 'pauseCount'],    config.get(['silenceDetector', 'pauseCount'])),
+						resetCount:    config.get([_pluginName, 'silenceDetector', 'resetCount'],    config.get(['silenceDetector', 'resetCount'])),
+						// bufferSize:    config.get([_pluginName, 'silenceDetector', 'bufferSize'],    config.get(['silenceDetector', 'bufferSize'])),// moved to main plugin config & renamed to repeatBufferSize
+					};
+
 					if(!recorder){
+
 						var workerImpl = config.get([_pluginName, 'encoder']);
 						if(!workerImpl){
 							//try to find worker implementation by (known) plugin names (fallback to default, if not known)
@@ -556,195 +389,126 @@ function(
 
 						var channels = config.get([_pluginName, 'channelCount'], config.get([_basePluginName, 'channelCount'], 1));
 						var targetSampleRate = config.get([_pluginName, 'sampleRate'], config.get([_basePluginName, 'sampleRate'], 44100));
-						var recorderWorkerPath = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? workerImpl : consts.getWorkerPath()+workerImpl;
-						recorder = new Recorder(input, {workerPath: recorderWorkerPath, debug: _logger.isDebug(), channels: channels, targetSampleRate: targetSampleRate});
+						var encoderParams = config.get([_pluginName, 'encoderParams'], config.get([_basePluginName, 'encoderParams']));
+						// var mimeType = config.get([_pluginName, 'mimeType'], config.get([_basePluginName, 'mimeType']));//DISABLED is sub-property of encoderParams!
+
+						var repeatBufferSize = config.get([_pluginName, 'repeatBufferSize'], config.get([_basePluginName, 'repeatBufferSize']));
+						// var repeatBufferMode = config.get([_pluginName, 'repeatBufferMode'], config.get([_basePluginName, 'repeatBufferMode']));//TODO impl.
+
+						//TODO remove?
+						var streaming = config.get([_pluginName, 'streaming'], config.get([_basePluginName, 'streaming']));
+						var resultMode = config.get([_pluginName, 'resultMode'], config.get([_basePluginName, 'resultMode']));//"blob" | "merged" | "raw"
+						var encodingMode = config.get([_pluginName, 'encodingMode'], config.get([_basePluginName, 'encodingMode']));//"onfinish" | "ondata"
+
+						var recorderWorkerPath = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? workerImpl : (consts.getWorkerPath() + workerImpl);
+
+						recorder = new Recorder(input, {
+							workerPath: recorderWorkerPath,
+							debug: _logger.isDebug(),
+							channels: channels,
+							targetSampleRate: targetSampleRate,
+							params: encoderParams,
+							detection: silenceDetectionConfig,
+							streaming: streaming,
+							resultMode: resultMode,
+							encodingMode: encodingMode,
+							repeatBufferSize: repeatBufferSize,
+							// repeatBufferMode: repeatBufferMode,
+						});
+
+						/**
+						 * event hook when audio-encoding has (partial) data or has finished
+						 *
+						 * @function
+						 * @param {Event} event
+						 * 			with property {data: Blob | ArrayBuffer | TypedArray[]}
+						 *
+						 * @memberOf Html5AudioInput.recorder#
+						 */
+						recorder.ondataavailable = function(event){
+							audioProcessor.sendData(event.data, textProcessor, currentFailureCallback, event.params);
+						};
+
+						/**
+						 * event hook when detection has been initialized:
+						 * do set up end-of-speech detection depending whether or not detection supports
+						 * decerning NOISE from SPEECH.
+						 *
+						 * @memberOf Html5AudioInput.recorder#
+						 */
+						recorder.ondetectioninitialized = function(event){
+
+							var recorder = event.recorder;
+
+							// attach speech/noise detection hooks
+							var eosHandler = function(){
+
+								if(audioProcessor.onspeechend){
+									audioProcessor.onspeechend.apply(audioProcessor, arguments);
+								}
+
+								//if in end-of-speech-detection modus (i.e. recognize() was called), do stop recognition now:
+								if(endOfSpeechDetection){
+									stopUserMedia();
+								}
+							};
+
+							if(recorder.canDetectSpeech){
+
+								recorder.onspeechend = eosHandler;
+								recorder.onsoundend = audioProcessor.onsoundend;
+
+								recorder.onspeechstart = audioProcessor.onspeechstart;
+								recorder.onsoundstart = audioProcessor.onsoundstart;
+
+							} else {
+								// if detection cannot differentiate between noise and speech: do treat onsound[start | end] as onspeech[start | end]
+								recorder.onsoundend = eosHandler;
+								recorder.onsoundstart = audioProcessor.onspeechstart;
+
+								if(_logger.isInfo()){
+									if(audioProcessor.onsoundstart){
+										_logger.info(_pluginName + ' exposes onsoundstart() hook, but detection does only support NOISE detection: using noise detection as speech detection, so this hook will never be invoked!');
+									}
+									if(audioProcessor.onsoundend){
+										_logger.info(_pluginName + ' exposes onsoundend() hook, but detection does only support NOISE detection: using noise detection as speech detection, so this hook will never be invoked!');
+									}
+								}
+							}
+
+							// only need to initialize speech detection once after recorder was created
+							// -> remove hook, or attach plugin's hook, if one is specified
+							if(audioProcessor.ondetectioninitialized){
+								audioProcessor.ondetectioninitialized.apply(recorder, arguments);
+								recorder.ondetectioninitialized = audioProcessor.ondetectioninitialized;
+							} else {
+								recorder.ondetectioninitialized = null;
+							}
+
+						};//END: recorder.ondetectioninitialized = function ...
+
+						// attach other recording and detection hooks (accept noise/speech detection events, see above)
+						var evtName;
+						for(var i=_pluginEventNames.length - 1; i >= 0; --i){
+							evtName = _pluginEventNames[i];
+							if(audioProcessor[evtName]){
+								recorder[evtName] = audioProcessor[evtName];
+							}
+						}
+
+						recorder.resetDetection(silenceDetectionConfig);
+
 					} else {
-						recorder.init(input);
+						recorder.reset(input);
+						recorder.resetDetection(silenceDetectionConfig);
 					}
 
 					//notify listeners that a new web audio input stream was started
 					_doEmitEvent(STREAM_STARTED_EVT_NAME, input, audio_context, recorder);
 
-					silenceDetection = recorder.processor;
-
-					/**
-					 * callback when audio-encoding has finished
-					 *
-					 * @function
-					 * @param {Event} event
-					 * 			with property {data: buf BLOB}
-					 *
-					 * @memberOf Html5AudioInput.recorder#
-					 */
-					recorder.onencodefinished = function(event){
-						audioProcessor.sendData(event.data, textProcessor, currentFailureCallback);
-					};
-
-					/**
-					 * @function
-					 * @memberOf Html5AudioInput.recorder#
-					 */
-					recorder.beforeonmessage = function (e){
-
-						if(mediaManager._log.isDebug()) mediaManager._log.log(e.data);
-
-						//attach current recorder
-						e.recorder = recorder;
-
-						var isContinuePropagation;
-						if (e.data === 'Send partial!'){
-
-							if(audioProcessor.onsendpart){
-								isContinuePropagation = audioProcessor.onsendpart(e, textProcessor, currentFailureCallback);
-							}
-						}
-						else if (e.data === 'Silence detected!'){
-
-							if(audioProcessor.onsilencedetected){
-								isContinuePropagation = audioProcessor.onsilencedetected(e, textProcessor, currentFailureCallback);
-							}
-
-							if (endOfSpeechDetection){
-
-								stopUserMedia();
-							}
-						}
-						else if (e.data === 'Noise detected!'){
-
-							if(audioProcessor.onnoisedetected){
-								isContinuePropagation = audioProcessor.onnoisedetected(e, textProcessor, currentFailureCallback);
-							}
-							isContinuePropagation = false;//FIXME
-						}
-						else if (e.data === 'clear'){
-
-							if(audioProcessor.onclear){
-								isContinuePropagation = audioProcessor.onclear(e, textProcessor, currentFailureCallback);
-							}
-						}
-						else if(e.data === 'Silence Detection initialized'){
-
-							if(audioProcessor.oninit){
-								isContinuePropagation = audioProcessor.oninit(e, textProcessor, currentFailureCallback);
-							}
-
-						}
-						else if(e.data === 'Silence Detection started'){
-
-							if(audioProcessor.onstarted){
-								isContinuePropagation = audioProcessor.onstarted(e, textProcessor, currentFailureCallback);
-							}
-
-						}
-						else if(e.data === 'Silence Detection Audio started'){
-
-							if(audioProcessor.onaudiostarted){
-								isContinuePropagation = audioProcessor.onaudiostarted(e, textProcessor, currentFailureCallback);
-							}
-
-						}
-						else if(e.data === 'Silence Detection stopped'){
-
-							if(audioProcessor.onstopped){
-								isContinuePropagation = audioProcessor.onstopped(e, textProcessor, currentFailureCallback);
-							}
-
-						} else {
-
-							mediaManager._log.error('Unknown message: '+e.data);
-						}
-
-
-						if(typeof isContinuePropagation !== 'undefined' && !isContinuePropagation){
-							return false;
-						}
-					};
-
-					/** @memberOf Html5AudioInput.recorder# */
-					var silenceDetectionConfig = {
-						sampleRate:    input.context.sampleRate,
-						noiseTreshold: config.get([_pluginName, "silenceDetector", "noiseTreshold"], config.get(["silenceDetector", "noiseTreshold"])),
-						pauseCount:    config.get([_pluginName, "silenceDetector", "pauseCount"],    config.get(["silenceDetector", "pauseCount"])),
-						resetCount:    config.get([_pluginName, "silenceDetector", "resetCount"],    config.get(["silenceDetector", "resetCount"])),
-						bufferSize:    config.get([_pluginName, "silenceDetector", "bufferSize"],    config.get(["silenceDetector", "bufferSize"])),
-					};
-
-					//initialize silence-detection:
-					silenceDetection.postMessage({
-						cmd: 'initDetection',
-						config: silenceDetectionConfig
-					});
-
 					callback && callback();
 
 				}//END: onStartUserMedia
-
-				/**
-				 * @memberOf Html5AudioInput.recorder#
-				 * @type getUserMedia()
-				 */
-				var _getUserMedia;
-
-				try {
-					// unify the different kinds of HTML5 implementations
-					_getUserMedia = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-
-					if(_getUserMedia){
-
-						nonFunctional = !((typeof AudioContext !== 'undefined') || (typeof webkitAudioContext !== 'undefined'));
-
-						if(!nonFunctional){
-
-							if(navigator.mediaDevices){
-
-								// wrap navigator.mediaDevices.getUserMedia():
-								_getUserMedia = function(constraints, onSuccess, onError){
-									navigator.mediaDevices.getUserMedia(constraints).then(onSuccess).catch(onError);
-								};
-
-								if(navigator.mediaDevices.getSupportedConstraints){
-									supportedMediaConstraints = navigator.mediaDevices.getSupportedConstraints();
-								} else {
-									supportedMediaConstraints = false;
-								}
-
-							} else {
-
-								// wrap legacy impl. navigator.getUserMedia():
-								navigator.__getUserMedia = _getUserMedia;
-								_getUserMedia = function(constraints, onSuccess, onError){
-									navigator.__getUserMedia.getUserMedia(constraints, onSuccess, onError);
-								};
-							}
-						} else {
-							_logger.error('No web audio support in this browser!');
-						}
-
-					} else {
-						_logger.error('Could not access getUserMedia() API: no access to microphone available (may not be running in through secure HTTPS connection?)');
-						nonFunctional = true;
-					}
-				}
-				catch (e) {
-					_logger.error('No web audio support in this browser! Error: '+(e.stack? e.stack : e));
-					nonFunctional = true;
-					supportedMediaConstraints = false;
-					if (currentFailureCallback)
-						currentFailureCallback(e);
-				}
-
-				if( nonFunctional !== true ) try {
-					audioProcessor._init(stopUserMedia);
-				} catch (e) {
-					_logger.error('Could not reach the voice recognition server!');
-					nonFunctional = true;
-					if(currentFailureCallback)
-						currentFailureCallback(e);
-				}
-
-				if (nonFunctional) {
-					return {};///////////////////////////// EARLY EXIT //////////////////////////////
-				}
 
 				/**
 				 * creates a new AudioContext
@@ -877,8 +641,8 @@ function(
 						}
 					}
 
-					if(silenceDetection && isStopSilenceDetection !== false){
-						silenceDetection.postMessage({cmd: 'stop'});
+					if(isStopSilenceDetection !== false){
+						recorder.stopDetection();
 					}
 
 				};
@@ -975,7 +739,7 @@ function(
 							 *
 							 * @memberOf media.plugin.html5AudioInput.prototype
 							 */
-							textProcessor = function(text, confidence, status, alternatives, unstable){
+							textProcessor = function(text, _confidence, status, _alternatives, _unstable){
 
 								//ignore non-recognition invocations
 								if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.INTERIM && status !== RESULT_TYPES.FINAL){
@@ -992,21 +756,20 @@ function(
 
 						currentFailureCallback = options.error;
 
-						isUseIntermediateResults = options.intermediate;
+						// isUseIntermediateResults = options.intermediate;
 						endOfSpeechDetection = false;
 
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
 						startUserMedia(function onRecStart(){
 							recorder && recorder.clear();
-							audioProcessor.initRec && audioProcessor.initRec();
 							audio_context && audio_context.resume();
-							recorder && recorder.record();
-							silenceDetection && silenceDetection.postMessage({cmd: 'start'});
+							recorder && recorder.start();
+							recorder && recorder.startDetection();
 						});
 
 						totalText = '';
-						audioProcessor.resetLastResult && audioProcessor.resetLastResult();
+						audioProcessor.setLastResult(false);
 
 						recording = mediaManager.micLevelsAnalysis.active(true);
 					},
@@ -1031,7 +794,8 @@ function(
 						currentFailureCallback = failureCallback;
 						textProcessor = void(0);//will be set within setTimeout() below
 
-						setTimeout(function(){
+						setTimeout(function(){//FIXME make timeout cancelable?
+
 							stopUserMedia(false);
 							if (statusCallback){
 								/**
@@ -1042,14 +806,14 @@ function(
 								 *
 								 * @memberOf media.plugin.html5AudioInput.prototype
 								 */
-								textProcessor = function(text, confidence, status, alternatives, unstable){
+								textProcessor = function(text, confidence, status, _alternatives, _unstable){
 
-									//ignore non-recognition invocations
+									//ignore non-recognition invocations & unstable/temporary results:
 									if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.INTERIM && status !== RESULT_TYPES.FINAL){
 										return;
 									}
 
-									if(audioProcessor.isLastResult && audioProcessor.isLastResult()) {
+									if(audioProcessor.isLastResult()) {
 
 										if(totalText){
 											totalText = totalText + ' ' + text;
@@ -1060,14 +824,14 @@ function(
 										//      are only for the last part
 										statusCallback(totalText, confidence, RESULT_TYPES.FINAL);
 									}
-									audioProcessor.resetLastResult && audioProcessor.resetLastResult();
+									audioProcessor.setLastResult(false);
 								};
 							}
 							audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
-							audioProcessor.setLastResult && audioProcessor.setLastResult();
+							audioProcessor.setLastResult(true);
 
-							silenceDetection && silenceDetection.postMessage({cmd: 'stop'});
+							recorder && recorder.stopDetection();
 
 						}, 100);
 
@@ -1113,21 +877,20 @@ function(
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
 						startUserMedia(function(){
-							audioProcessor.initRec && audioProcessor.initRec();
 							recorder && recorder.clear();
 							audio_context && audio_context.resume();
-							recorder && recorder.record();
-							silenceDetection && silenceDetection.postMessage({cmd: 'start'});
+							recorder && recorder.start();
+							recorder && recorder.startDetection();
 
 							//TODO find better mechanism (or name?): this may not be the last blob (there may be silent audio)
 							//							             ... but it will be the last (successfully recognized) result!
-							audioProcessor.setLastResult && audioProcessor.setLastResult();
+							audioProcessor.setLastResult(true);
 						});
 
 						totalText='';
-						audioProcessor.resetLastResult && audioProcessor.resetLastResult();
+						audioProcessor.setLastResult(false);
 
-						recording=mediaManager.micLevelsAnalysis.active(true);
+						recording = mediaManager.micLevelsAnalysis.active(true);
 
 					},
 					/**
@@ -1141,12 +904,11 @@ function(
 
 						stopUserMedia(false);
 
-						audioProcessor.setLastResult && audioProcessor.setLastResult();
+						audioProcessor.setLastResult(true);
 
-						silenceDetection && silenceDetection.postMessage({cmd: 'stop'});
-						if (successCallback){
-							successCallback();
-						}
+						recorder && recorder.stopDetection();
+
+						successCallback && successCallback();
 					},
 					/**
 					 * @public
@@ -1167,6 +929,7 @@ function(
 						}
 
 					}
+					, _stopUserMedia: stopUserMedia//FIXME remove when stream/node initialization was moved to recorder
 
 				};//END: return
 
@@ -1208,7 +971,7 @@ function(
 
 				//initialize implementation:
 				try{
-					initImpl(newWebAudioAsrImpl);
+					initImpl(newWebAudioAsrImpl, instance._stopUserMedia);
 				} catch(err){
 					handleError(err);
 				}
@@ -1231,7 +994,7 @@ function(
 
 			//load the necessary scripts and then call htmlAudioConstructor
 
-			mediaManager.loadFile('webMicLevels.js', function(){
+			mediaManager.loadPlugin('webMicLevels.js', function(){
 
 				if(typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD){
 					try{
@@ -1240,10 +1003,10 @@ function(
 						handleError(err);
 					}
 				} else {
-					require([implFile], processLoaded, function(_err){
+					require([consts.getMediaPluginPath() + implFile], processLoaded, function(_err){
 						//try filePath as module ID instead:
 						var moduleId = implFile.replace(/\.js$/i, '');
-						_logger.debug('failed loading plugin from file '+implPath+', trying module ID ' + moduleId)
+						_logger.debug('failed loading plugin from file '+implFile+', trying module ID ' + moduleId)
 						require([moduleId], processLoaded, handleError)
 					});
 				}

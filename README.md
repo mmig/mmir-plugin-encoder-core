@@ -30,6 +30,16 @@ For speech service integrations see
 > * ~~[mmir-plugin-asr-nuance-xhr][7]~~ _(the Nuance speech service has been discontinued; use Cerence WS instead)_
 > * ~~[mmir-plugin-asr-nuance-ws][8]~~ _(the Nuance speech service has been discontinued; use Cerence WS instead)_
 
+-----
+
+# Acknowledgements
+
+ * `www/voiceRecoder.js`: based on work by
+    * Copyright (C) 2013 Matt Diamond (MIT License) [Recorderjs](https://github.com/mattdiamond/Recorderjs)
+ * `www/webworker/wavEncoder.js`: based on work by
+    * Copyright (C) 2013 Matt Diamond (MIT License) [Recorderjs](https://github.com/mattdiamond/Recorderjs)
+    * Modified Work Copyright (C) 2014 Christopher Rudmin (MIT License) [opus-recorder](https://github.com/chris-rudmin/opus-recorder)
+
 
 [0]: https://github.com/mmig/mmir-plugin-encoder-core
 [1]: https://mmig.github.io/mmir/api/mmir.MediaManager.html

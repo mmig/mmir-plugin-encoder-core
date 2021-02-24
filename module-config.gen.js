@@ -11,28 +11,22 @@ module.exports = {
       pluginName: "silenceDetector",
       config: [
         /**
-         * @type integer, or stringified integer
-         * @default 3
-         */
-        "bufferSize",
-        /**
-         * @type integer, or stringified integer
+         * @type integer
          * @default 15
          */
         "resetCount",
         /**
-         * @type integer, or stringified integer
+         * @type integer
          * @default 3
          */
         "pauseCount",
         /**
-         * @type float of interval [0, 1], or stringified float
+         * @type float from interval [0, 1]
          * @default 0.1
          */
         "noiseTreshold"
       ],
       defaultValues: {
-        bufferSize: 3,
         resetCount: 15,
         pauseCount: 3,
         noiseTreshold: 0.1
@@ -41,6 +35,22 @@ module.exports = {
     webAudioInput: {
       pluginName: "webAudioInput",
       config: [
+        /**
+         * custom encoder parameters (depends on encoder)
+         */
+        "encoderParams",
+        /**
+         * size (~ number of audio chunks) for repeat-buffer:
+         *
+         * during encoding last n chunks get buffered, and on silence (~> end-of-speech)
+         * get prepended to the new audio data
+         * (in order to prepend audio that is really the next speech utterance but was
+         *  still attached to the previous audio due to delay in end-of-speech detection
+         *  )
+         *
+         * @default 3
+         */
+        "repeatBufferSize",
         /**
          * whether or not request _noise supression_ when capturing/recording audio from microphone
          *
@@ -92,7 +102,11 @@ module.exports = {
         /**
          * preferred number of channels for capturing/recording audio from microphone
          *
-         * NOTE: may not be supported by environment
+         * NOTE: may not be supported by environment for capturing the audio,
+         *       but internal recording/encoding will use this setting
+         *
+         * WARNING: currently, only recording/encoding for 1 channel is supported
+         *          (since most speech recognition services require 1 channel/mono audio)
          *
          * @type number
          * @default 1
@@ -103,6 +117,8 @@ module.exports = {
         "channelCount"
       ],
       defaultValues: {
+        encoderParams: null,
+        repeatBufferSize: 3,
         noiseSuppression: true,
         echoCancellation: false,
         autoGainControl: true,
@@ -115,7 +131,7 @@ module.exports = {
     function(pluginConfig, _runtimeConfig, _pluginBuildConfigs) {
       if(pluginConfig && pluginConfig.encoder === 'wav'){
         return {
-          includeModules: ['mmir-plugin-encoder-core/workers/recorderWorkerExt']
+          includeModules: ['mmir-plugin-encoder-core/workers/wavEncoder']
         }
       }
     }
@@ -133,7 +149,7 @@ module.exports = {
    * TODO extract this from implementation www/webAudioInput.js::_workerImpl
    */
   defaultEncoders: {
-    wav: "mmir-plugin-encoder-core/workers/recorderWorkerExt",
+    wav: "mmir-plugin-encoder-core/workers/wavEncoder",
     speex: "mmir-plugin-encoder-speex",
     opus: "mmir-plugin-encoder-opus",
     flac: "mmir-plugin-encoder-flac",

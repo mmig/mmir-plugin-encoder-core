@@ -34,19 +34,49 @@
     "compat": {
       "./www/webAudioInput.js": {
         "file": "./www/alt/webAudioInputCompat.js",
-        "type": "media"
+        "type": "media",
+        "dependencyMapping": {
+          "./voiceRecorder.js": "./legacyVoiceRecorder.js"
+        },
+        "additionalDependencies": {
+          "legacyWebAudioInput": "./legacyWebAudioInput.js"
+        }
       },
       "./www/voiceRecorder.js": {
         "file": "./www/alt/voiceRecorderCompat.js",
         "type": "custom",
-        "exportedName": "Recorder"
+        "exportedName": "Recorder",
+        "async": true,
+        "dependencyMapping": {
+          "mmirf/events": "./eventEmitter.js"
+        }
+      },
+      "./www/encoder.js": {
+        "file": "./www/alt/encoderCompat.js",
+        "type": "none",
+        "template": "./res/compat-js/encoder-compat-template.js"
+      },
+      "./www/legacyWebAudioInput.js": {
+        "file": "./www/alt/legacyWebAudioInputCompat.js",
+        "type": "none",
+        "template": "./res/compat-js/legacyWebAudioInput-compat-template.js"
+      },
+      "./www/eventEmitter.js": {
+        "file": "./www/alt/eventEmitterCompat.js",
+        "type": "none",
+        "template": "./res/compat-js/eventEmitter-compat-template.js"
+      },
+      "./www/legacyVoiceRecorder.js": {
+        "file": "./www/alt/legacyVoiceRecorderCompat.js",
+        "type": "none",
+        "template": "./res/compat-js/legacyVoiceRecorder-compat-template.js"
       }
     }
   },
   "devDependencies": {
     "mmir-lib": "^6.2.0",
-    "mmir-plugin-exports": "^2.3.2",
-    "mmir-tooling": "^6.2.4"
+    "mmir-plugin-exports": "^2.5.0",
+    "mmir-tooling": "^6.2.5"
   },
   "peerDependencies": {
     "mmir-lib": ">=5"

@@ -7,19 +7,26 @@
 var _id = "mmir-plugin-encoder-core";
 var _paths = {
   "mmir-plugin-encoder-core/encoder": "www/encoder.js",
+  "mmir-plugin-encoder-core/eventEmitter": "www/eventEmitter.js",
+  "mmir-plugin-encoder-core/legacyVoiceRecorder": "www/legacyVoiceRecorder.js",
+  "mmir-plugin-encoder-core/legacyWebAudioInput": "www/legacyWebAudioInput.js",
   "mmir-plugin-encoder-core/resampler": "www/resampler.js",
   "mmir-plugin-encoder-core/silenceDetector": "www/silenceDetector.js",
   "mmir-plugin-encoder-core/voiceRecorder": "www/voiceRecorder.js",
   "mmir-plugin-encoder-core/webAudioInput": "www/webAudioInput.js",
+  "mmir-plugin-encoder-core/encoderCompat": "www/alt/encoderCompat.js",
+  "mmir-plugin-encoder-core/eventEmitterCompat": "www/alt/eventEmitterCompat.js",
+  "mmir-plugin-encoder-core/legacyVoiceRecorderCompat": "www/alt/legacyVoiceRecorderCompat.js",
+  "mmir-plugin-encoder-core/legacyWebAudioInputCompat": "www/alt/legacyWebAudioInputCompat.js",
   "mmir-plugin-encoder-core/voiceRecorderCompat": "www/alt/voiceRecorderCompat.js",
   "mmir-plugin-encoder-core/voiceRecorderWebpack": "www/alt/voiceRecorderWebpack.js",
   "mmir-plugin-encoder-core/webAudioInputCompat": "www/alt/webAudioInputCompat.js",
   "mmir-plugin-encoder-core/webAudioInputWebpack": "www/alt/webAudioInputWebpack.js",
-  "mmir-plugin-encoder-core/workers/recorderWorkerExt": "www/webworker/recorderWorkerExt.js",
+  "mmir-plugin-encoder-core/workers/wavEncoder": "www/webworker/wavEncoder.js",
   "mmir-plugin-encoder-core": "www/webAudioInput.js"
 };
 var _workers = [
-  "mmir-plugin-encoder-core/workers/recorderWorkerExt"
+  "mmir-plugin-encoder-core/workers/wavEncoder"
 ];
 var _exportedModules = [
   "mmir-plugin-encoder-core"
@@ -35,6 +42,13 @@ function _join(source, target, dict){
       target.push(item);
     }
   });
+};
+function _toDict(list){
+  var dict = {};
+  list.forEach(function(item){
+    dict[item] = true;
+  });
+  return dict;
 };
 function _getAll(type, mode, isResolve){
 
@@ -82,7 +96,7 @@ function _getBuildConfig(pluginName, buildConfigsMap){
     pluginName = void(0);
   }
   var buildConfigs = [];
-  var dupl = buildConfigsMap | {};
+  var dupl = Array.isArray(buildConfigsMap)? _toDict(buildConfigsMap) : buildConfigsMap || {};
   if(_buildConfig){
     var buildConfigMod = require(__dirname+'/'+_buildConfig);
     var buildConfig = buildConfigMod.buildConfigs;
