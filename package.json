@@ -75,7 +75,7 @@
   },
   "devDependencies": {
     "mmir-lib": "^6.2.0",
-    "mmir-plugin-exports": "^2.5.0",
+    "mmir-plugin-exports": "^2.5.1",
     "mmir-tooling": "^6.2.5"
   },
   "peerDependencies": {
