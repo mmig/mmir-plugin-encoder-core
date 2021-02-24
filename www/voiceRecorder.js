@@ -149,7 +149,7 @@ define(['mmirf/events'], function(EventEmitter){
 					if(eventName === 'detectioninitialized'){
 						selfRef.canDetectSpeech = !!(msg.params && msg.params.canDetectSpeech);
 					}
-					listener.emit(eventName, {type: eventName, recorder: selfRef, data: msg.data});
+					listener.emit(eventName, {type: eventName, recorder: selfRef, data: msg.data, params: msg.params});
 
 				} else if(msg.source === 'encoder'){
 
@@ -157,7 +157,7 @@ define(['mmirf/events'], function(EventEmitter){
 					if(eventName === 'initialized'){
 						selfRef.supportedTypes = (msg.params && msg.params.supportedTypes) || false;
 					}
-					listener.emit(eventName, {type: eventName, recorder: selfRef, data: msg.data});
+					listener.emit(eventName, {type: eventName, recorder: selfRef, data: msg.data, params: msg.params});
 
 				} else {
 
