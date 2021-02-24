@@ -25,7 +25,10 @@ indent_style = tab
 [www/resampler.js]
 indent_style = space
 
-[www/lib/**]
+[res/**]
+indent_style = tab
+
+[res/libs/**]
 indent_style = space
 insert_final_newline = false
 trim_trailing_whitespace = false
