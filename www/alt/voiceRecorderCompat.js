@@ -92,10 +92,13 @@
 			config = extend({}, config);
 			replacedMod[getId('mmirf/configurationManager')] = config;
 			config.___get = config.get;
-			config.get = function(propertyName, defaultValue, setDefaultIfUnset){
-				var res = this.___get(propertyName, defaultValue);
-				if(setDefaultIfUnset && typeof res === 'undefined' && defaultValue !== 'undefined'){
-					this.set(propertyName, defaultValue);
+			config.get = function(name, defaultValue, setDefaultIfUnset){
+				var res = this.___get(isArray(name) ? name.slice() : name);
+				if(typeof res === 'undefined' && defaultValue !== 'undefined'){
+					res = defaultValue;
+					if(setDefaultIfUnset){
+						this.set(isArray(name) ? name.slice() : name, defaultValue);
+					}
 				}
 				return res;
 			};

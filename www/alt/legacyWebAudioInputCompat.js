@@ -25,7 +25,6 @@ define(['mmirf/util/extend'], function(extend){
 
 			}
 
-
 			// replaced hooks for silence detection
 
 			if(pluginInstance.onsendpart){
@@ -63,19 +62,9 @@ define(['mmirf/util/extend'], function(extend){
 			if(pluginInstance.onaudiostarted){
 				// recorder.on'Silence Detection Audio started' = pluginInstance.onaudiostarted;
 
-				// //FIXM can this be "rerouted" to ondetectionstart? -> onaudiostarted would be triggered after some few audio chunks were processed
-				// if(recorder.ondetectionstart){
-				// 	//HACK if there is already an event handler, create "proxy function" that triggers both
-				// 	recorder.__ondetectionstart = recorder.ondetectionstart;
-				// 	recorder.ondetectionstart = function(){
-				// 		recorder.__ondetectionstart.apply(recorder, arguments);
-				// 		pluginInstance.onaudiostarted.apply(recorder, arguments);
-				// 	};
-				// } else {
-				// 	recorder.ondetectionstart = pluginInstance.onaudiostarted;
-				// }
-
-				//FIXME can this be "rerouted" to ondetectionstart? -> onaudiostarted would be triggered after some few audio chunks were processed
+				//WARNING this is a WORKAROUND for the removed recorder.ondetectionstart hook:
+				//        "rerouted" ondetectionstart to ondetectionstart?
+				//        (onaudiostarted would be triggered after some few audio chunks were processed)
 				if(pluginInstance.ondetectionstart){
 					//HACK if there is already an event handler, create "proxy function" that triggers both
 					pluginInstance.__ondetectionstart = pluginInstance.ondetectionstart;
