@@ -23,36 +23,59 @@ export interface PluginConfigEntry extends MediaManagerPluginEntry {
   //NOT IMPLEMENTED/SUPPORTED, TODO?
   // /** @example  "2000000" */
   // silenceBuffer?: number|string;
+
+  /**
+   * size (~ number of audio chunks) for repeat-buffer:
+   *
+   * during encoding last n chunks get buffered, and on silence (~> end-of-speech)
+   * get prepended to the new audio data
+   * (in order to prepend audio that is really the next speech utterance but was
+   *  still attached to the previous audio due to delay in end-of-speech detection
+   *  )
+   *
+   * @default 3
+   */
+  repeatBufferSize?: number;
+
+  /**
+   * custom encoder parameters (depends on encoder)
+   */
+  encoderParams?: EncoderParamsConfigEntry;
 }
 
 export interface SilenceDetectorPluginConfigEntry {
   /**
-   * @type float of interval [0, 1], or stringified float
+   * @type float from interval [0, 1]
    * @default 0.1
    */
   noiseTreshold?: number | string;
   /**
-   * @type integer, or stringified integer
+   * @type integer
    * @default 3
    */
   pauseCount: number | string;
   /**
-   * @type integer, or stringified integer
+   * @type integer
    * @default 15
    */
   resetCount: number | string;
-  /**
-   * @type integer, or stringified integer
-   * @default 3
-   */
-  bufferSize: number | string;
+  //MOVED & RENAMED -> repeatBufferSize
+  // /**
+  //  * @type integer
+  //  * @default 3
+  //  */
+  // bufferSize: number | string;
 }
 
 export interface MicrophonePluginConfigEntry {
   /**
    * preferred number of channels for capturing/recording audio from microphone
    *
-   * NOTE: may not be supported by environment
+	 * NOTE: may not be supported by environment for capturing the audio,
+	 *       but internal recording/encoding will use this setting
+	 *
+	 * WARNING: currently, only recording/encoding for 1 channel is supported
+	 *          (since most speech recognition services require 1 channel/mono audio)
    *
    * @type number
    * @default 1
@@ -111,6 +134,17 @@ export interface MicrophonePluginConfigEntry {
   noiseSuppression?: boolean;
 }
 
+export interface EncoderParamsConfigEntry {
+  /**
+   * MIME type for the encoded audio (depends on encoder)
+   * DEFAULT depends on encoder implementation
+   */
+  mimeType?: string;
+
+  /** custom endoder parameters (depend on specific encoder implementation; will always have a default setting) */
+  [field: string]: any;
+}
+
 /**
  * Known encoders:
  * can be specified via plugin-configuration
@@ -128,7 +162,7 @@ export enum DefaultEncoders {
   flac = 'mmir-plugin-encoder-flac',
   opus = 'mmir-plugin-encoder-opus',
   speex = 'mmir-plugin-encoder-speex',
-  wav = 'mmir-plugin-encoder-core/workers/recorderWorkerExt'
+  wav = 'mmir-plugin-encoder-core/workers/wavEncoder'
   //[TODO] speex = 'mmir-plugin-encoder-speex'
 }
 
@@ -139,8 +173,9 @@ export enum DefaultEncoders {
  */
 
 export type ASRGoogleXHRImplType = 'mmir-plugin-asr-google-xhr.js';
-export type ASRNuanceXHRImplType = 'mmir-plugin-asr-nuance-xhr.js';
-export type ASRNuanceWSImplType = 'mmir-plugin-asr-nuance-ws.js';
+export type ASRCerenceWSImplType = 'mmir-plugin-asr-cerence-ws.js';
+// export type ASRNuanceXHRImplType = 'mmir-plugin-asr-nuance-xhr.js';
+// export type ASRNuanceWSImplType = 'mmir-plugin-asr-nuance-ws.js';
 
 
 //////////////////////////////////// Config within "mediaManager.plugin.env" ////////////////////
@@ -148,7 +183,7 @@ export type ASRNuanceWSImplType = 'mmir-plugin-asr-nuance-ws.js';
 
 export type WebAudioInputNameType = 'mmir-plugin-encoder-core';
 
-export type WebAudioInputImplType = ASRGoogleXHRImplType | ASRNuanceXHRImplType | ASRNuanceWSImplType;
+export type WebAudioInputImplType = ASRGoogleXHRImplType | ASRCerenceWSImplType;// | ASRNuanceXHRImplType | ASRNuanceWSImplType;
 
 export interface MediaManagerConfigWebAudioInputEntry extends MediaManagerPluginEntry {
   mod: WebAudioInputNameType;
