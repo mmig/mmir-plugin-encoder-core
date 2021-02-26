@@ -48,9 +48,6 @@ function WavEncoder(config, baseEncoder){
 	var _tempBuffer = [];
 	// this.encoded;
 
-	// //if encode() is called while async-init, the data will be cached in this list until initialization has completed
-	// this._cached;
-
 	//target samplerate for encoding WAV
 	var _desiredSampleRate;// = 16000;
 
@@ -64,6 +61,8 @@ function WavEncoder(config, baseEncoder){
 
 	var streaming;
 	var resultMode;
+
+	var _encodeFunc;
 
 	this._init = function(config) {
 
@@ -113,11 +112,29 @@ function WavEncoder(config, baseEncoder){
 
 		}
 
-		//update internal parameter
-		_bytesPerSample = _bitsPerSample / 8;
-		if(_bytesPerSample < 1 || _bytesPerSample > 4){
-			console.error('invalid setting for bitsPerSample ('+_bitsPerSample+'): supported valus are 8, 16, 24, 32');
+		//update internal parameters/settings
+
+		switch(_bitsPerSample) {
+			case 32: // 32 bits signed
+				_encodeFunc = _encode32bit;
+				break;
+			case 24: // 24 bits signed
+				_encodeFunc = _encode24bit;
+				break;
+			case 16: // 16 bits signed
+				_encodeFunc = _encode16bit;
+				break;
+			case 8: // 8 bits unsigned
+				_encodeFunc = _encode8bit;
+				break;
+			default:
+				console.error('Only 8, 16, 24 and 32 bits per sample are supported: tried to use '+_bitsPerSample+', using 16 bitsPerSample instead!');
+				_encodeFunc = _encode16bit;
+				_bitsPerSample = 16;
+				config.params.bitsPerSample = 16;
 		}
+
+		_bytesPerSample = _bitsPerSample / 8;
 	}
 
 	// this.encoderInit = function(config) {
@@ -140,17 +157,12 @@ function WavEncoder(config, baseEncoder){
 		// }
 		// this._doEncodeCached();
 
-		if (this.baseEncoder.resampler) {
+		if(this.baseEncoder.resampler) {
 			try {
-				// samples = this.resampler.process(samples);
 				buff = this.baseEncoder.doResample(buff);
 			} catch (e) {
-				//FIXME send error
+				//FIXME send error?
 				console.error('error resampling audio', e);
-				// this.worker.postMessage({
-				// 	status: -1,
-				// 	reason: e
-				// });
 				return
 			}
 		}
@@ -158,42 +170,23 @@ function WavEncoder(config, baseEncoder){
 		var buffers = [buff];//FIXME
 
 		var bufferLength = buffers[0].length;
-		var reducedData = new Uint8Array( bufferLength * _channels * _bytesPerSample );
-
-		var encodeFunc;
-		switch ( _bitsPerSample ) {
-			case 32: // 32 bits signed
-				encodeFunc = _encode32bit;
-				break;
-			case 24: // 24 bits signed
-				encodeFunc = _encode24bit;
-				break;
-			case 16: // 16 bits signed
-				encodeFunc = _encode16bit;
-				break;
-			case 8: // 8 bits unsigned
-				encodeFunc = _encode8bit;
-				break;
-			default:
-				console.error("Only 8, 16, 24 and 32 bits per sample are supported");
-				encodeFunc = _encode16bit;
-		}
+		var reducedData = new Uint8Array(bufferLength * _channels * _bytesPerSample);
 
 		// data (although for onyl 1 channel is supported)
-		for ( var i = 0; i < bufferLength; i++ ) {
-			for ( var channel = 0; channel < _channels; channel++ ) {
+		for(var i = 0; i < bufferLength; i++) {
+			for(var channel = 0; channel < _channels; channel++) {
 
-				var outputIndex = ( i * _channels + channel ) * _bytesPerSample;
+				var outputIndex = (i * _channels + channel) * _bytesPerSample;
 
 				// clip the signal if it exceeds [-1, 1]
 				var sample = Math.max(-1, Math.min(1, buffers[ channel ][ i ]));
 
 				// encode
-				encodeFunc(sample, reducedData, outputIndex);
+				_encodeFunc(sample, reducedData, outputIndex);
 			}
 		}
 
-		_tempBuffer.push( reducedData );
+		_tempBuffer.push(reducedData);
 		_recLengthWav += reducedData.length;
 	};
 
@@ -212,7 +205,6 @@ function WavEncoder(config, baseEncoder){
 
 		// var isStreaming = this.baseEncoder.select(options.streaming, streaming);
 		var isRaw = (options.resultMode || resultMode) === 'raw';
-
 
 		if(!_isRawFormat){
 
@@ -284,30 +276,6 @@ function WavEncoder(config, baseEncoder){
 		reducedData[ outputIndex ] = (sample + 1) * 127.5;
 	}
 
-
-	// this.interleave = function(inputL, inputR){
-	// 	var length = inputL.length + inputR.length;
-	// 	var result = new Float32Array(length);
-	//
-	// 	var index = 0,
-	// 		inputIndex = 0;
-	//
-	// 	while (index < length){
-	// 		result[index++] = inputL[inputIndex];
-	// 		result[index++] = inputR[inputIndex];
-	// 		inputIndex++;
-	// 	}
-	// 	return result;
-	// }
-	//
-	// this.floatTo16BitPCM = function(output, offset, input){
-	// 	for (var i = 0; i < input.length; i++, offset+=2){
-	// 		var s = Math.max(-1, Math.min(1, input[i]));
-	// 		output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-	// 	}
-	// 	return output;
-	// }
-
 	this.writeString = function(view, offset, string){
 		for (var i = 0; i < string.length; i++){
 			view.setUint8(offset + i, string.charCodeAt(i));
@@ -333,11 +301,7 @@ function WavEncoder(config, baseEncoder){
 		var buffer = new ArrayBuffer(resultBufferLength);
 		var view = new DataView(buffer);
 
-		// var channels = mono? 1 : 2;
-		// var bitsPerSample = 16;
 		var bytesPerSample = bitsPerSample / 8;
-		// var length = dataLength * bytesPerSample;//errornous?
-		// var length = dataLength * elemLength;
 
 		/* RIFF identifier */
 		this.writeString(view, 0, 'RIFF');
