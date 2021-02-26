@@ -340,14 +340,16 @@ function(
 				 */
 				function onStartUserMedia(inputstream, callback){
 
-					if(!recording){
-						return callback && callback(); //////////////// EARLY EXIT /////////
-					}
-
 					stream = inputstream;
 					if(audio_context){
 						audio_context.close();
 					}
+
+					if(!recording){
+						stopUserMedia(false);
+						return callback && callback(); //////////////// EARLY EXIT /////////
+					}
+
 					audio_context = createAudioContext();
 					var input = audio_context.createMediaStreamSource(stream);
 
