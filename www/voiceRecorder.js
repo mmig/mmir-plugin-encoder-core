@@ -115,8 +115,10 @@ define(['mmirf/events'], function(EventEmitter){
 		this.onstop = null;
 		this.onerror = null;
 
+		/** recording state, one of 'inactive' | 'recording' | 'paused'  */
 		this.state = 'inactive';// 'inactive' | 'recording' | 'paused'
 
+		/** can use {@link #reset} for re-initializing the recorder again */
 		this.destroyed = false;
 
 		/**
@@ -132,15 +134,19 @@ define(['mmirf/events'], function(EventEmitter){
 
 		//TODO? support MediaRecorder.stream (would need to move the code for creating the audio source from webAudioInput to _init());
 		// this.stream = null;
-
 		this.node = null;
-		// TODO remove this?
-		this.processor = null;
+
+		/**
+		 * @deprecated do not use; use {@link #resetDetection()}, {@link #startDetection}, {@link #stopDetection()} instead
+		 * @type {Worker}
+		 * @protected
+		 */
+		this._processor = null;
 
 		this._initWorker = function(){
 
 			worker = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? __webpack_require__(config.workerPath || WORKER_PATH)() : new Worker(config.workerPath || WORKER_PATH);
-			this.processor = worker;
+			this._processor = worker;
 			var selfRef = this;
 
 			worker.onmessage = function(evt){
@@ -264,7 +270,7 @@ define(['mmirf/events'], function(EventEmitter){
 				this.release();
 				worker.terminate();
 				worker = null;
-				this.processor = null;
+				this._processor = null;
 				this.destroyed = true;
 			}
 		};

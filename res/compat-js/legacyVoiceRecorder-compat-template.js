@@ -26,8 +26,8 @@ define(['./voiceRecorder.js'], function(Recorder){
 
 		};
 
-		this.processor.__onmessage = this.processor.onmessage
-		this.processor.onmessage = function(evt){
+		this._processor.__onmessage = this._processor.onmessage
+		this._processor.onmessage = function(evt){
 
 			// invoke original function
 			this.__onmessage(evt);
