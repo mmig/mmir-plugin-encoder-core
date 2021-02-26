@@ -163,7 +163,6 @@ export enum DefaultEncoders {
   opus = 'mmir-plugin-encoder-opus',
   speex = 'mmir-plugin-encoder-speex',
   wav = 'mmir-plugin-encoder-core/workers/wavEncoder'
-  //[TODO] speex = 'mmir-plugin-encoder-speex'
 }
 
 /*
