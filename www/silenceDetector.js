@@ -416,7 +416,7 @@ var silenceDetector = {
 	 * @public
 	 * @memberOf SilenceDetector
 	 */
-	stop: _stop(),
+	stop: _stop,
 	/**
 	 * Executes one of the functions.
 	 *
