@@ -84,6 +84,9 @@ BaseEncoder.prototype = {
 		this.encoder = this.encoderFactory(config, this);
 		this.encoder.init && this.encoder.init();
 
+		//do set config again, in case encoder modified settings FIXME is there a better to only set it once?
+		this.setConfig(config);
+
 		this.clear(true);//<- force clearing to ensure recording buffer gets initialized
 
 		//send initialization message (with supportedTypes information):
@@ -98,6 +101,56 @@ BaseEncoder.prototype = {
 		if(typeof config[configFieldName] !== 'undefined'){
 			this[fieldName] = config[configFieldName];
 		}
+	},
+
+	/**
+	 * HELPER: get value from config:
+	 * if config value is undefined and an defaultValue (other than undefined)
+	 * is given, updates the config with the defaultValue.
+	 *
+	 * @param  {String} fieldName the field name to retrieve
+	 * @param  {Configuration} config the configuration object
+	 * @param  {any} [defaultValue] OPTIONAL a default value
+	 * @return {any} the config (or default) value
+	 */
+	getSetConfig: function(fieldName, config, defaultValue){
+		if(typeof config[fieldName] !== 'undefined'){
+			return config[fieldName];
+		}
+		if(typeof defaultValue !== 'undefined'){
+			config[fieldName] = defaultValue;
+		}
+		return defaultValue;
+	},
+	/**
+	 * HELPER get MIME type from config.params:
+	 * if MIME type is not specified, or is not contained in supportedTypes, the
+	 * first entry from supportedTypes will be set as MIME type to the params and returned.
+	 *
+	 * @param  {EncoderParams} params the config.params object (which may have a value for params.mimeType)
+	 * @param  {Array<String>} supportedTypes list of supported MIME types
+	 * @return {String} the MIME type: if supported, params.mimeType, otherwise first entry from supportedTypes
+	 */
+	getSetMimeType: function(params, supportedTypes){
+		var mimeType = params.mimeType;
+		if(typeof mimeType !== 'undefined'){
+			var supported = false;
+			var re = new RegExp('^'+mimeType+'$', 'i');
+			for(var i=0, size=supportedTypes.length; i < size; ++i){
+				if(re.test(supportedTypes[i])){
+					supported = true;
+					if(mimeType !== supportedTypes[i]){
+						params.mimeType = mimeType = supportedTypes[i];
+					}
+					break;
+				}
+			}
+			if(supported){
+				return mimeType;
+			}
+			console.warn('specified unsupported MIME type ('+params.mimeType+'), using default ('+supportedTypes[0]+') instead.');
+		}
+		return (params.mimeType = supportedTypes[0]);
 	},
 
 	select: function(value, ifUndefinedValue){

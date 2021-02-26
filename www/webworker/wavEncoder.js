@@ -52,37 +52,42 @@ function WavEncoder(config, baseEncoder){
 	// this._cached;
 
 	//target samplerate for encoding WAV
-	var _desiredSampleRate = 16000;
+	var _desiredSampleRate;// = 16000;
 
 	var _sampleRate;
 	var _channels;
 
-	var _bitsPerSample = 16;
-	var _bytesPerSample = 2;
+	var _bitsPerSample;// = 16;
+	var _bytesPerSample;// = 2;
 
 	var _isRawFormat = false;
 
-	var streaming = typeof config.streaming !== 'undefined'? config.streaming : false;
-	var resultMode = config.resultMode || 'merged';
+	var streaming;
+	var resultMode;
 
 	this._init = function(config) {
 
-		var targetSampleRate = config.targetSampleRate || _desiredSampleRate;
-		if(targetSampleRate !== _desiredSampleRate){
-			_desiredSampleRate = targetSampleRate;
-		}
-		_sampleRate = config.sampleRate || _sampleRate;
-		_channels = config.channels || _channels;
+		//get/set general config settings:
 
-		if(config.channels && config.channels !== _channels){
+		_sampleRate = this.baseEncoder.getSetConfig('sampleRate', config);
+		_desiredSampleRate = this.baseEncoder.getSetConfig('targetSampleRate', config, _sampleRate);
+
+		_channels = this.baseEncoder.getSetConfig('channels', config, 1);
+		if(config.channels !== 1){
 			console.warn('overwriting channels setting (channels='+config.channels+'): only 1 channel supported');
 			_channels = 1;
+			config.channels = 1;
 		}
 
-		_bitsPerSample = config.params.bitsPerSample || _bitsPerSample;
+		streaming = this.baseEncoder.getSetConfig('streaming', config, false);
+		resultMode = this.baseEncoder.getSetConfig('resultMode', config, 'merged');
 
-		this.mimeType = config.params.mimeType || this.supportedTypes[0];
+		//get/set config.params:
 
+		_bitsPerSample = this.baseEncoder.getSetConfig('bitsPerSample', config.params, 16);
+
+		// get MIME type (and correct settings, if necessary)
+		this.mimeType = this.baseEncoder.getSetMimeType(config.params, this.supportedTypes);
 		_isRawFormat = false;
 		var bitrateFromMime = /^audio\/l(\d+)/i.exec(this.mimeType);
 		if(bitrateFromMime){
@@ -92,6 +97,7 @@ function WavEncoder(config, baseEncoder){
 
 				if(config.params.bitsPerSample && config.params.bitsPerSample !== _bitsPerSample){
 					console.warn('overwriting bitsPerSample setting (params.bitsPerSample='+config.params.bitsPerSample+') with approriate value derived from MIME type: '+this.mimeType+' -> '+_bitsPerSample)
+					config.params.bitsPerSample = _bitsPerSample;
 				}
 			}
 
@@ -99,20 +105,16 @@ function WavEncoder(config, baseEncoder){
 				streaming = true;
 				if(typeof config.streaming !== 'undefined' && config.streaming !== streaming){
 					console.warn('overwriting streaming setting (streaming='+config.streaming+') with approriate value derived from MIME type: '+this.mimeType+' -> '+streaming);
+					config.streaming = streaming;
 				}
 			}
 
 			_isRawFormat = true;
 
-		} else if(!/^audio\/wav/i.test(this.mimeType)){
-
-			console.warn('overwriting unknown MIME type setting (mimeType='+this.mimeType+') with default "audio/wav"');
-
-			this.mimeType = 'audio/wav';
 		}
 
+		//update internal parameter
 		_bytesPerSample = _bitsPerSample / 8;
-
 		if(_bytesPerSample < 1 || _bytesPerSample > 4){
 			console.error('invalid setting for bitsPerSample ('+_bitsPerSample+'): supported valus are 8, 16, 24, 32');
 		}
