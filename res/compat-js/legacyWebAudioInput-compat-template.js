@@ -4,11 +4,11 @@
  * for older plugin implementations (targeting API < 1.x)
  */
 
-define(['mmirf/util/extend'], function(extend){
+define(['mmirf/util/extend', 'mmirf/util/toArray'], function(extend, toArray){
 
 	return {
 
-		addCompatibilityLayer: function (pluginInstance){
+		addCompatibilityLayer: function (pluginInstance, stopUserMedia){
 
 			if(pluginInstance._compatiblityApplied){
 				return;
@@ -23,6 +23,18 @@ define(['mmirf/util/extend'], function(extend){
 					pluginInstance.initRec(evt.recorder);
 				};
 
+			}
+
+			// if exposed callback hook setCallbacks() request the old signature
+			//  (i.e. 4 arguments instead of 3), attach replacemnt that injects stopUserMedia function
+			if(pluginInstance.setCallbacks && pluginInstance.setCallbacks.length > 3){
+				pluginInstance.__setCallbacks = pluginInstance.setCallbacks;
+				pluginInstance.setCallbacks = function(){
+					var args = toArray(arguments);
+					args[3] = args[2];
+					args[2] = stopUserMedia;
+					this.__setCallbacks.apply(this, args);
+				}
 			}
 
 			// replaced hooks for silence detection

@@ -790,7 +790,7 @@ function(
 
 						endOfSpeechDetection = false;
 
-						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
+						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, options);
 
 						totalText = '';
 						audioProcessor.setLastResult(false);
@@ -873,7 +873,7 @@ function(
 								audioProcessor.setLastResult(false);
 							};
 						}
-						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
+						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, options);
 
 						audioProcessor.setLastResult(true);
 
@@ -921,7 +921,7 @@ function(
 
 						endOfSpeechDetection = true;
 
-						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
+						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, options);
 
 						totalText='';
 						audioProcessor.setLastResult(false);
