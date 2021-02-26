@@ -131,6 +131,16 @@ define(['mmirf/events'], function(EventEmitter){
 		 * @type {Array<string> | false | undefined}
 		 */
 		this.supportedTypes = void(0);
+		/**
+		 * actually used (target) MIME type for recording (suported types depend on used encoder implementation)
+		 *
+		 * NOTE set/updated upon receiving initialized message from encoder module (worker)
+		 *
+		 * NOTE not all encoder implementations may support returing the used MIME types
+		 *
+		 * @type {string | false | undefined}
+		 */
+	 	this.mimeType = void(0);
 
 		//TODO? support MediaRecorder.stream (would need to move the code for creating the audio source from webAudioInput to _init());
 		// this.stream = null;
@@ -165,6 +175,7 @@ define(['mmirf/events'], function(EventEmitter){
 					var eventName = msg.message === 'data'? 'dataavailable' : msg.message;
 					if(eventName === 'initialized'){
 						selfRef.supportedTypes = (msg.params && msg.params.supportedTypes) || false;
+						selfRef.mimeType = (msg.params && msg.params.mimeType) || false;
 					}
 					listener.emit(eventName, {type: eventName, recorder: selfRef, data: msg.data, params: msg.params});
 
