@@ -296,9 +296,6 @@ function(
 				 */
 				var recording = false;
 
-				// /** @memberOf Html5AudioInput# */
-				// var isUseIntermediateResults = false;
-
 				/**
 				 * @type AudioContext
 				 * @memberOf Html5AudioInput#
@@ -310,7 +307,7 @@ function(
 				 */
 				var stream = null;
 				/**
-				 * @type RecorderExt
+				 * @type Recorder
 				 * @memberOf Html5AudioInput#
 				 */
 				var recorder = null;
@@ -318,9 +315,10 @@ function(
 				var totalText = '';
 				/**
 				 * the function that is called on the recognized text that came back from the server
+				 * @function
 				 * @memberOf Html5AudioInput#
 				 */
-				var textProcessor = function(text, confidence, status, alternatives, unstable){};
+				var textProcessor = function(_text, _confidence, _status, _alternatives, _unstable){};
 
 				/**
 				 * flag if currently active recognition should be stopped upon end-of-speech detection
@@ -341,6 +339,11 @@ function(
 				 * @memberOf Html5AudioInput#
 				 */
 				function onStartUserMedia(inputstream, callback){
+
+					if(!recording){
+						return callback && callback(); //////////////// EARLY EXIT /////////
+					}
+
 					stream = inputstream;
 					if(audio_context){
 						audio_context.close();
@@ -604,7 +607,9 @@ function(
 				 * @param {Boolean} [isStopSilenceDetection] OPTIONAL
 				 * 			if false: do not stop silence detection,
 				 * 			if omitted or any other value than false: stop silence detection
+				 * 			DEFAULT: true
 				 *
+				 * @funtion
 				 * @memberOf Html5AudioInput#
 				 */
 				var stopUserMedia = function(isStopSilenceDetection){
@@ -616,35 +621,38 @@ function(
 					mediaManager.micLevelsAnalysis.stop();
 
 					//release any references etc. the recorder may hold
-					if(recorder){
-						recorder.release();
-					};
+					recorder && recorder.release();
 
 					if(stream){
 
 						var thestream = stream;
 						stream = void(0);
-						//DISABLED: MediaStream.stop() is deprecated -> instead: stop all tracks individually
-//								stream.stop();
+
 						try{
+
 							if(thestream.active){
-								var list = thestream.getTracks(), track;
-								for(var i=list.length-1; i >= 0; --i){
-									track = list[i];
-									if(track.readyState !== 'ended'){
-										track.stop();
+								if(thestream.getTracks){
+									var list = thestream.getTracks(), track;
+									for(var i=list.length-1; i >= 0; --i){
+										track = list[i];
+										if(track.readyState !== 'ended'){
+											track.stop();
+										}
 									}
+								} else if(thestream.stop){
+									//use fallback: MediaStream.stop() is deprecated (should use MediaStream.getTracks()[i].stop() instead)
+									thestream.stop();
 								}
 							}
+
 						} catch (err){
 							_logger.log('webAudioInput: a problem occured while stopping audio input analysis: '+err);
 						}
 					}
 
-					if(isStopSilenceDetection !== false){
+					if(isStopSilenceDetection !== false && recorder){
 						recorder.stopDetection();
 					}
-
 				};
 
 				//invoke the passed-in initializer-callback and export the public functions:
@@ -720,13 +728,15 @@ function(
 						options.success = statusCallback? statusCallback : options.success;
 						options.error = failureCallback? failureCallback : options.error;
 						options.intermediate = typeof intermediateResults === 'boolean'? intermediateResults : !!options.intermediate;
-						//TODO
-//								options.language = options.language? options.language : lang.getLanguageConfig(_pluginName) || DEFAULT_LANGUAGE;
-//								options.results = options.results? options.results : DEFAULT_ALTERNATIVE_RESULTS;
-//								options.disableImprovedFeedback =
-//								options.mode =
-//								options.eosPause =
 
+						if(recording){
+							if(options.errror){
+								options.error('speech recognitionalready active');
+							} else if(_logger.ise()){
+								_logger.error('speech recognition is already active');
+							}
+							return; ////////////////////// EARLY EXIT ////////////////////
+						}
 
 						if(options.intermediate){
 							textProcessor = options.success;
@@ -756,22 +766,24 @@ function(
 
 						currentFailureCallback = options.error;
 
-						// isUseIntermediateResults = options.intermediate;
 						endOfSpeechDetection = false;
 
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
-
-						startUserMedia(function onRecStart(){
-							recorder && recorder.clear();
-							audio_context && audio_context.resume();
-							recorder && recorder.start();
-							recorder && recorder.startDetection();
-						});
 
 						totalText = '';
 						audioProcessor.setLastResult(false);
 
 						recording = mediaManager.micLevelsAnalysis.active(true);
+
+						startUserMedia(function onRecStart(){
+							if(!recording){
+								return;
+							}
+							recorder && recorder.clear();
+							audio_context && audio_context.resume();
+							recorder && recorder.start();
+							recorder && recorder.startDetection();
+						});
 					},
 					/**
 					 * @public
@@ -791,49 +803,59 @@ function(
 							failureCallback = failureCallback? failureCallback : options.error;
 						}
 
+						if(!stream){
+							// -> stopRecord() was callec before recognize()/startRecord()
+							//    could initialize recording stream!
+							// -> do mark as "not recording" (i.e. onStartUserMedia() will
+							//    cancel initializing the stream, recorder etc.)
+							recording = mediaManager.micLevelsAnalysis.active(false);
+						}
+
+						if(!recording){
+							//FIXME is this appropriate? -> since recording was already stopped before (most likely by canceling), do return empty final result
+							statusCallback && statusCallback('', 0, RESULT_TYPES.FINAL);
+							return; //////////////////// EARLY EXIT ////////////////////////
+						}
+
 						currentFailureCallback = failureCallback;
-						textProcessor = void(0);//will be set within setTimeout() below
 
-						setTimeout(function(){//FIXME make timeout cancelable?
+						stopUserMedia(false);
 
-							stopUserMedia(false);
-							if (statusCallback){
-								/**
-								 * @param text
-								 * @param confidence
-								 * @param status
-								 * @param alternatives
-								 *
-								 * @memberOf media.plugin.html5AudioInput.prototype
-								 */
-								textProcessor = function(text, confidence, status, _alternatives, _unstable){
+						if (statusCallback){
+							/**
+							 * @param text
+							 * @param confidence
+							 * @param status
+							 * @param alternatives
+							 *
+							 * @memberOf media.plugin.html5AudioInput.prototype
+							 */
+							textProcessor = function(text, confidence, status, _alternatives, _unstable){
 
-									//ignore non-recognition invocations & unstable/temporary results:
-									if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.INTERIM && status !== RESULT_TYPES.FINAL){
-										return;
+								//ignore non-recognition invocations & unstable/temporary results:
+								if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.INTERIM && status !== RESULT_TYPES.FINAL){
+									return;
+								}
+
+								if(audioProcessor.isLastResult()) {
+
+									if(totalText){
+										totalText = totalText + ' ' + text;
+									} else {
+										totalText = text;
 									}
+									//NOTE: omit alternatives, since this is the cumulative result, and the alternatives
+									//      are only for the last part
+									statusCallback(totalText, confidence, RESULT_TYPES.FINAL);
+								}
+								audioProcessor.setLastResult(false);
+							};
+						}
+						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
-									if(audioProcessor.isLastResult()) {
+						audioProcessor.setLastResult(true);
 
-										if(totalText){
-											totalText = totalText + ' ' + text;
-										} else {
-											totalText = text;
-										}
-										//NOTE: omit alternatives, since this is the cumulative result, and the alternatives
-										//      are only for the last part
-										statusCallback(totalText, confidence, RESULT_TYPES.FINAL);
-									}
-									audioProcessor.setLastResult(false);
-								};
-							}
-							audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
-
-							audioProcessor.setLastResult(true);
-
-							recorder && recorder.stopDetection();
-
-						}, 100);
+						recorder && recorder.stopDetection();
 
 					},
 					/**
@@ -862,12 +884,15 @@ function(
 						options.success = statusCallback? statusCallback : options.success;
 						options.error = failureCallback? failureCallback : options.error;
 						options.intermediate = typeof intermediateResults === 'boolean'? intermediateResults : !!options.intermediate;
-						//TODO
-//								options.language = options.language? options.language : lang.getLanguageConfig(_pluginName) || DEFAULT_LANGUAGE;
-//								options.results = options.results? options.results : DEFAULT_ALTERNATIVE_RESULTS;
-//								options.disableImprovedFeedback =
-//								options.mode =
-//								options.eosPause =
+
+						if(recording){
+							if(options.errror){
+								options.error('speech recognitionalready active');
+							} else if(_logger.ise()){
+								_logger.error('speech recognition is already active');
+							}
+							return; ////////////////////// EARLY EXIT ////////////////////
+						}
 
 						textProcessor = options.success
 						currentFailureCallback = options.error;
@@ -876,7 +901,15 @@ function(
 
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, stopUserMedia, options);
 
+						totalText='';
+						audioProcessor.setLastResult(false);
+
+						recording = mediaManager.micLevelsAnalysis.active(true);
+
 						startUserMedia(function(){
+							if(!recording){
+								return;
+							}
 							recorder && recorder.clear();
 							audio_context && audio_context.resume();
 							recorder && recorder.start();
@@ -886,12 +919,6 @@ function(
 							//							             ... but it will be the last (successfully recognized) result!
 							audioProcessor.setLastResult(true);
 						});
-
-						totalText='';
-						audioProcessor.setLastResult(false);
-
-						recording = mediaManager.micLevelsAnalysis.active(true);
-
 					},
 					/**
 					 * @public
