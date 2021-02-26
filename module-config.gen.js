@@ -129,9 +129,17 @@ module.exports = {
   },
   buildConfigs: [
     function(pluginConfig, _runtimeConfig, _pluginBuildConfigs) {
-      if(pluginConfig && pluginConfig.encoder === 'wav'){
-        return {
-          includeModules: ['mmir-plugin-encoder-core/workers/wavEncoder']
+      if(pluginConfig && pluginConfig.encoder){
+        var enc = pluginConfig.encoder;
+        if(enc === 'wav'){
+          return {
+            includeModules: ['mmir-plugin-encoder-core/workers/wavEncoder']
+          }
+        }
+        if(enc === 'amr' || enc === 'flac' || enc === 'opus' || enc === 'speex'){
+          return {
+            includePlugins: [{id: 'mmir-plugin-encoder-'+enc}]
+          }
         }
       }
     }

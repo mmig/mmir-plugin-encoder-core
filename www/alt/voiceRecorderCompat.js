@@ -257,7 +257,11 @@ var AsyncExportWrapper = function(){
 		this.onstop = null;
 		this.onerror = null;
 
+		/** recording state, one of 'inactive' | 'recording' | 'paused'  */
 		this.state = 'inactive';// 'inactive' | 'recording' | 'paused'
+
+		/** can use {@link #reset} for re-initializing the recorder again */
+		this.destroyed = false;
 
 		/**
 		 * list of supported (target) MIME types for recording (depends on used encoder implementation)
@@ -269,17 +273,32 @@ var AsyncExportWrapper = function(){
 		 * @type {Array<string> | false | undefined}
 		 */
 		this.supportedTypes = void(0);
+		/**
+		 * actually used (target) MIME type for recording (suported types depend on used encoder implementation)
+		 *
+		 * NOTE set/updated upon receiving initialized message from encoder module (worker)
+		 *
+		 * NOTE not all encoder implementations may support returing the used MIME types
+		 *
+		 * @type {string | false | undefined}
+		 */
+	 	this.mimeType = void(0);
 
 		//TODO? support MediaRecorder.stream (would need to move the code for creating the audio source from webAudioInput to _init());
 		// this.stream = null;
-
 		this.node = null;
-		this.processor = null;
+
+		/**
+		 * @deprecated do not use; use {@link #resetDetection()}, {@link #startDetection}, {@link #stopDetection()} instead
+		 * @type {Worker}
+		 * @protected
+		 */
+		this._processor = null;
 
 		this._initWorker = function(){
 
 			worker = typeof WEBPACK_BUILD !== 'undefined' && WEBPACK_BUILD? __webpack_require__(config.workerPath || WORKER_PATH)() : new Worker(config.workerPath || WORKER_PATH);
-			this.processor = worker;
+			this._processor = worker;
 			var selfRef = this;
 
 			worker.onmessage = function(evt){
@@ -298,6 +317,7 @@ var AsyncExportWrapper = function(){
 					var eventName = msg.message === 'data'? 'dataavailable' : msg.message;
 					if(eventName === 'initialized'){
 						selfRef.supportedTypes = (msg.params && msg.params.supportedTypes) || false;
+						selfRef.mimeType = (msg.params && msg.params.mimeType) || false;
 					}
 					listener.emit(eventName, {type: eventName, recorder: selfRef, data: msg.data, params: msg.params});
 
@@ -345,14 +365,18 @@ var AsyncExportWrapper = function(){
 
 		this.start = function(){
 			recording = true;
-			this.state = 'recording';
-			listener.emit('start', {recorder: this});
+			if(this.state !== 'recording'){
+				this.state = 'recording';
+				listener.emit('start', {recorder: this});
+			}
 		};
 
 		this.stop = function(){
 			recording = false;
-			this.state = 'inactive';
-			listener.emit('stop', {recorder: this});
+			if(this.state !== 'inactive'){
+				this.state = 'inactive';
+				listener.emit('stop', {recorder: this});
+			}
 		};
 
 		this.clear = function(){
@@ -375,8 +399,11 @@ var AsyncExportWrapper = function(){
 		};
 
 		this.reset = function(source){
-			// this.destroyed = false;
+			if(!worker){
+				this._initWorker();
+			}
 			this._initSource(source);
+			this.destroyed = false;
 		};
 
 		this.release = function(){
@@ -388,8 +415,17 @@ var AsyncExportWrapper = function(){
 				this.node.disconnect();
 				this.node = null;
 			}
+		};
 
-			// this.destroyed = true;
+		this.destroy = function(){
+
+			if(!this.destroyed){
+				this.release();
+				worker.terminate();
+				worker = null;
+				this._processor = null;
+				this.destroyed = true;
+			}
 		};
 
 		/**
