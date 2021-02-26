@@ -340,9 +340,16 @@ function(
 				 */
 				function onStartUserMedia(inputstream, callback){
 
+					if(stream && stream.active){
+						if(_logger.isw()) _logger.warn('starting new audio stream while previous one was not closed, closing now');
+						stopMediaStream(stream);
+					}
+
 					stream = inputstream;
 					if(audio_context){
-						audio_context.close();
+						if(!audio_context.state || audio_context.state !== 'closed'){
+							audio_context.close();
+						}
 					}
 
 					if(!recording){
@@ -629,31 +636,44 @@ function(
 
 						var thestream = stream;
 						stream = void(0);
-
-						try{
-
-							if(thestream.active){
-								if(thestream.getTracks){
-									var list = thestream.getTracks(), track;
-									for(var i=list.length-1; i >= 0; --i){
-										track = list[i];
-										if(track.readyState !== 'ended'){
-											track.stop();
-										}
-									}
-								} else if(thestream.stop){
-									//use fallback: MediaStream.stop() is deprecated (should use MediaStream.getTracks()[i].stop() instead)
-									thestream.stop();
-								}
-							}
-
-						} catch (err){
-							_logger.log('webAudioInput: a problem occured while stopping audio input analysis: '+err);
-						}
+						stopMediaStream(thestream);
 					}
 
 					if(isStopSilenceDetection !== false && recorder){
 						recorder.stopDetection();
+					}
+				};
+
+				/**
+				 * HELPER: do close a media stream, if it is still active
+				 *
+				 * @param {MediaStream.stream} mediaStream
+				 * 			the media stream to close
+				 *
+				 * @funtion
+				 * @memberOf Html5AudioInput#
+				 */
+				var stopMediaStream = function(mediaStream){
+
+					try{
+
+						if(mediaStream.active){
+							if(mediaStream.getTracks){
+								var list = mediaStream.getTracks(), track;
+								for(var i=list.length-1; i >= 0; --i){
+									track = list[i];
+									if(track.readyState !== 'ended'){
+										track.stop();
+									}
+								}
+							} else if(mediaStream.stop){
+								//use fallback: MediaStream.stop() is deprecated (should use MediaStream.getTracks()[i].stop() instead)
+								mediaStream.stop();
+							}
+						}
+
+					} catch (err){
+						_logger.log('a problem occured while stopping audio input stream: '+err);
 					}
 				};
 
