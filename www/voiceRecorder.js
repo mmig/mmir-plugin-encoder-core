@@ -117,6 +117,8 @@ define(['mmirf/events'], function(EventEmitter){
 
 		this.state = 'inactive';// 'inactive' | 'recording' | 'paused'
 
+		this.destroyed = false;
+
 		/**
 		 * list of supported (target) MIME types for recording (depends on used encoder implementation)
 		 *
@@ -132,6 +134,7 @@ define(['mmirf/events'], function(EventEmitter){
 		// this.stream = null;
 
 		this.node = null;
+		// TODO remove this?
 		this.processor = null;
 
 		this._initWorker = function(){
@@ -203,14 +206,18 @@ define(['mmirf/events'], function(EventEmitter){
 
 		this.start = function(){
 			recording = true;
-			this.state = 'recording';
-			listener.emit('start', {recorder: this});
+			if(this.state !== 'recording'){
+				this.state = 'recording';
+				listener.emit('start', {recorder: this});
+			}
 		};
 
 		this.stop = function(){
 			recording = false;
-			this.state = 'inactive';
-			listener.emit('stop', {recorder: this});
+			if(this.state !== 'inactive'){
+				this.state = 'inactive';
+				listener.emit('stop', {recorder: this});
+			}
 		};
 
 		this.clear = function(){
@@ -233,8 +240,11 @@ define(['mmirf/events'], function(EventEmitter){
 		};
 
 		this.reset = function(source){
-			// this.destroyed = false;
+			if(!worker){
+				this._initWorker();
+			}
 			this._initSource(source);
+			this.destroyed = false;
 		};
 
 		this.release = function(){
@@ -246,8 +256,17 @@ define(['mmirf/events'], function(EventEmitter){
 				this.node.disconnect();
 				this.node = null;
 			}
+		};
 
-			// this.destroyed = true;
+		this.destroy = function(){
+
+			if(!this.destroyed){
+				this.release();
+				worker.terminate();
+				worker = null;
+				this.processor = null;
+				this.destroyed = true;
+			}
 		};
 
 		/**
