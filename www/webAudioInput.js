@@ -773,8 +773,8 @@ function(
 							 */
 							textProcessor = function(text, _confidence, status, _alternatives, _unstable){
 
-								//ignore non-recognition invocations
-								if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.INTERIM && status !== RESULT_TYPES.FINAL){
+								//ignore non-stable, non-recognition invocations
+								if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.FINAL){
 									return;
 								}
 
@@ -844,6 +844,7 @@ function(
 						stopUserMedia(false);
 
 						if (statusCallback){
+							var prevTextProcessor = textProcessor;
 							/**
 							 * @param text
 							 * @param confidence
@@ -852,14 +853,9 @@ function(
 							 *
 							 * @memberOf media.plugin.html5AudioInput.prototype
 							 */
-							textProcessor = function(text, confidence, status, _alternatives, _unstable){
+							textProcessor = function(text, confidence, status, alternatives, unstable){
 
-								//ignore non-recognition invocations & unstable/temporary results:
-								if(status !== RESULT_TYPES.INTERMEDIATE && status !== RESULT_TYPES.INTERIM && status !== RESULT_TYPES.FINAL){
-									return;
-								}
-
-								if(audioProcessor.isLastResult()) {
+								if(status === RESULT_TYPES.FINAL) {
 
 									if(totalText){
 										totalText = totalText + ' ' + text;
@@ -869,8 +865,11 @@ function(
 									//NOTE: omit alternatives, since this is the cumulative result, and the alternatives
 									//      are only for the last part
 									statusCallback(totalText, confidence, RESULT_TYPES.FINAL);
+
+								} else {
+
+									prevTextProcessor && prevTextProcessor(text, confidence, status, alternatives, unstable);
 								}
-								audioProcessor.setLastResult(false);
 							};
 						}
 						audioProcessor.setCallbacks(textProcessor, currentFailureCallback, options);
@@ -953,7 +952,7 @@ function(
 
 						stopUserMedia(false);
 
-						audioProcessor.setLastResult(true);
+						audioProcessor.setCanceled();
 
 						recorder && recorder.stopDetection();
 
