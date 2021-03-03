@@ -426,6 +426,17 @@ function mergeBuffers(recBuffers, recordingLength, TypedArrayConstructor){
 	return result;
 }
 
+/**
+ * HELPER attaches helper methods/fields for caching data (e.g. when encoder is not ready yet)
+ *        and applying/encoding (all) cached data (e.g. when encoder has become ready)
+ * <pre>
+ * // cache data:
+ * encoder.doCache(buffer)
+ * // apply/encode all cached data (does nothing, if no data is cached):
+ * encoder.doEncodeCached()
+ * </pre>
+ * @param  {object} encoder the instance/context to which the helper methods/fields should be attached
+ */
 function makeEncodingCachableFor(encoder){
 
 	encoder._cached = null;
