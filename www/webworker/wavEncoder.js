@@ -331,8 +331,10 @@ function WavEncoder(config, baseEncoder){
 		view.setUint32(40, dataLength, true);
 
 		if(!onlyHeader){
-			for (var i = 0; i < samples.length; i++ ) {
-				view.set( samples[i], i * bufferLength + 44 );
+			var offset = 44;
+			for ( var i = 0; i < samples.length; i++ ) {
+				buffer.set( samples[i], offset );
+				offset += samples[i].length * elemLength;
 			}
 		}
 
