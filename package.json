@@ -19,7 +19,10 @@
   "keywords": [
     "audio",
     "codec",
-    "webworker"
+    "record",
+    "webworker",
+    "mmir",
+    "mmir-plugin"
   ],
   "author": "russa",
   "license": "MIT",

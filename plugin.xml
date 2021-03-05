@@ -6,7 +6,7 @@
 
     <name>MMIR framwork core audio encoder</name>
 
-    <keywords>cordova,audio,codec,webworker</keywords>
+    <keywords>cordova,audio,codec,record,webworker,mmir,mmir-plugin</keywords>
 
     <description>
       Cordova plugin for the MMIR framework that provides core functionality for running (JavaScript)
