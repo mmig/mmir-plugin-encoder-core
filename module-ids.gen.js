@@ -35,10 +35,10 @@ var _dependencies = [];
 var _exportedFiles = [];
 var _modes = {};
 var _buildConfig = "module-config.gen.js";
-function _join(source, target, dict){
+function _join(target, source, dict){
   source.forEach(function(item){
-    if(!dict[item]){
-      dict[item] = true;
+    if(!dict || !dict[item]){
+      dict && (dict[item] = true);
       target.push(item);
     }
   });
@@ -65,9 +65,9 @@ function _getAll(type, mode, isResolve){
   if(isArray){
     dupl = {};
     if(mod && mod[type]){
-      _join(this.modes[mode][type], result, dupl);
+      _join(result, this.modes[mode][type], dupl);
     }
-    _join(data, result, dupl);
+    _join(result, data, dupl);
   } else if(isResolve){
     var root = __dirname;
     Object.keys(result).forEach(function(field){
@@ -82,7 +82,7 @@ function _getAll(type, mode, isResolve){
     var depExports = require(dep + '/module-ids.gen.js');
     var depData = depExports.getAll(type, mode, isResolve);
     if(isArray){
-      _join(depData, result, dupl);
+      _join(result, depData, dupl);
     } else {
       Object.assign(result, depData)
     }
@@ -101,7 +101,7 @@ function _getBuildConfig(pluginName, buildConfigsMap){
     var buildConfigMod = require(__dirname+'/'+_buildConfig);
     var buildConfig = buildConfigMod.buildConfigs;
     if(Array.isArray(buildConfig)){
-      _join(buildConfig, buildConfigs, dupl);
+      _join(buildConfigs, buildConfig, dupl);
     } else if(buildConfig && !dupl[buildConfig]){
       dupl[buildConfig] = true;
       buildConfigs.push(buildConfig);
@@ -111,7 +111,7 @@ function _getBuildConfig(pluginName, buildConfigsMap){
         if(!pluginName || pluginName === name){
           var pluginBuildConfig = buildConfigMod.plugins[name].buildConfigs;
           if(Array.isArray(pluginBuildConfig)){
-            _join(pluginBuildConfig, buildConfigs, dupl);
+            _join(buildConfigs, pluginBuildConfig, dupl);
           } else if(pluginBuildConfig && !dupl[pluginBuildConfig]){
             dupl[pluginBuildConfig] = true;
             buildConfigs.push(pluginBuildConfig);
@@ -125,7 +125,7 @@ function _getBuildConfig(pluginName, buildConfigsMap){
     var depExports = require(dep + '/module-ids.gen.js');
     if(depExports.buildConfig){
       var depBuildConfigs = depExports.getBuildConfig(null, dupl);
-      _join(depBuildConfigs, buildConfigs, dupl);
+      _join(buildConfigs, depBuildConfigs);
     }
   });
 
