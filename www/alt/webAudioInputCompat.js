@@ -1157,6 +1157,7 @@
 					initImpl(newWebAudioAsrImpl, instance._stopUserMedia);
 				} catch(err){
 					handleError(err);
+					return; //////////////// EARLY EXIT ////////////////////
 				}
 
 				//invoke the passed-in initializer-callback and export the public functions:
